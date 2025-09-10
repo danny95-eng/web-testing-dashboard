@@ -259,6 +259,17 @@ console.log('[Dashboard] main.js loaded');
     document.body.appendChild(modal);
   }
 
+  // Helper to read File objects as data URLs (base64) for image previews/storage
+  function readFilesAsDataURLs(files) {
+    return Promise.all(Array.from(files).map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, data: reader.result });
+        reader.readAsDataURL(file);
+      });
+    }));
+  }
+
   function parseIdeaDescription(description) {
     const lines = description.split('\n');
     const result = {
