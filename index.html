@@ -127,224 +127,32 @@
                         <div class="grid md:grid-cols-3 gap-4 mb-4">
                             <div>
                                 <span class="font-medium text-mindful-midnight">Start Date:</span>
-                                <script type="module" src="/src/main.js"></script>
-                        <span class="font-medium text-mindful-midnight">Start Date:</span>
-                        <p class="text-gray-700">${test.startDate || ''}</p>
+                                <p class="text-gray-700">2025-01-01</p>
                     </div>
                     <div>
-                        <span class="font-medium text-mindful-midnight">End Date:</span>
-                        <p class="text-gray-700">${test.endDate || ''}</p>
-                    </div>
-                    <div>
-                        <span class="font-medium text-mindful-midnight">Duration:</span>
-                        <p class="text-gray-700">${test.duration || ''}</p>
+                        <span class="font-medium text-mindful-midnight">Expected End:</span>
+                        <p class="text-gray-700">2025-01-15</p>
                     </div>
                     <div>
                         <span class="font-medium text-mindful-midnight">Tester:</span>
-                        <p class="text-gray-700">${test.tester || ''}</p>
+                        <p class="text-gray-700">Alice</p>
                     </div>
                 </div>
                 <div class="mb-4">
-                    <span class="font-medium text-mindful-midnight">Test Results:</span>
-                    <p class="text-gray-700">${test.results || ''}</p>
+                    <span class="font-medium text-mindful-midnight">Notes:</span>
+                    <p class="text-gray-700">Baseline responsiveness check.</p>
                 </div>
-            `;
-            list.appendChild(item);
-        }
+                <div class="bg-wellness-white p-3 rounded">
+                    <span class="font-medium text-mindful-midnight text-sm">Screenshots:</span>
+                    <div class="mt-2 flex gap-2">
+                        <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">📱 Mobile</div>
+                        <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">💻 Desktop</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        async function refreshCompletedTests() {
-            const completedList = document.getElementById('completed-list');
-            completedList.innerHTML = '<div class="text-gray-500">Loading completed tests…</div>';
-            try {
-                console.log('[Dashboard] Fetching /api/tests?status=completed');
-                const resp = await fetch('/api/tests?status=completed', { cache: 'no-store', headers: { 'Accept': 'application/json' } });
-                if (!resp.ok) throw new Error('Failed to fetch completed tests');
-                const rows = await resp.json();
-                console.log('[Dashboard] Completed tests response', rows);
-                if (!Array.isArray(rows) || rows.length === 0) {
-                    const empty = document.createElement('div');
-                    empty.className = 'text-gray-500';
-                    empty.textContent = 'No completed tests.';
-                    completedList.appendChild(empty);
-                    return;
-                }
-                completedList.innerHTML = '';
-                for (const row of rows) {
-                    const test = {
-                        name: row['Name'] || 'Untitled Test',
-                        startDate: row['Start Date'] || '',
-                        endDate: row['End Date'] || '',
-                        tester: row['Tester'] || '',
-                        result: row['Result'] || 'Completed',
-                        results: row['Results'] || '',
-                    };
-                    addCompletedTestCard(test);
-                }
-            } catch (err) {
-                console.error('Failed loading completed tests:', err);
-                const errorDiv = document.createElement('div');
-                errorDiv.className = 'text-red-600';
-                errorDiv.textContent = 'Failed to load completed tests from the server.';
-                completedList.appendChild(errorDiv);
-            }
-        }
-        // Form handlers
-        document.getElementById('idea-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const idea = {
-                name: document.getElementById('idea-name').value.trim(),
-                submitter: document.getElementById('idea-submitter').value.trim(),
-                element: document.getElementById('idea-element').value.trim(),
-                reasoning: document.getElementById('idea-reasoning').value.trim(),
-                howto: document.getElementById('idea-howto').value.trim(),
-                success: document.getElementById('idea-success').value.trim(),
-            };
-
-            // Build description for Google Sheet from fields beyond title
-            const description = [
-                idea.element && `Element: ${idea.element}`,
-                idea.reasoning && `Reasoning: ${idea.reasoning}`,
-                idea.howto && `How to Test: ${idea.howto}`,
-                idea.success && `Success Criteria: ${idea.success}`,
-            ].filter(Boolean).join('\n');
-
-            try {
-                const resp = await fetch('/api/ideas', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        title: idea.name,
-                        description,
-                        submittedBy: idea.submitter || undefined,
-                    }),
-                });
-
-                if (!resp.ok) {
-                    const err = await resp.json().catch(() => ({}));
-                    throw new Error(err.error || 'Failed to save idea');
-                }
-
-                // Update UI only after successful save
-                if (editingIdea) {
-                    const container = editingIdea.closest('.bg-wellness-white');
-                    container.querySelector('h3').textContent = idea.name;
-                    container.querySelector('.grid > div:nth-child(1) p').textContent = idea.element;
-                    container.querySelector('.grid > div:nth-child(2) p').textContent = idea.reasoning;
-                    container.querySelector('.grid > div:nth-child(3) p').textContent = idea.howto;
-                    container.querySelector('.mt-2 p').textContent = idea.success;
-                } else {
-                    addIdea(idea);
-                }
-                closeIdeaModal();
-            } catch (err) {
-                console.error('Save idea failed:', err);
-                alert('Failed to save idea to Google Sheet. Please try again.');
-            }
-        });
-
-        document.getElementById('test-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const test = {
-                name: document.getElementById('test-name').value,
-                startDate: document.getElementById('test-start-date').value,
-                endDate: document.getElementById('test-end-date').value,
-                tester: document.getElementById('test-tester').value,
-                status: document.getElementById('test-status').value,
-                notes: document.getElementById('test-notes').value
-            };
-            try {
-                const resp = await fetch('/api/tests', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: test.name,
-                        startDate: test.startDate,
-                        expectedEndDate: test.endDate,
-                        tester: test.tester,
-                        status: test.status,
-                        notes: test.notes,
-                    }),
-                });
-                if (!resp.ok) {
-                    const err = await resp.json().catch(() => ({}));
-                    throw new Error(err.error || 'Failed to save test');
-                }
-                // Update UI
-                if (editingTest) {
-                    const container = editingTest.closest('.bg-white');
-                    container.querySelector('h3').textContent = test.name;
-                    container.querySelector('.grid > div:nth-child(1) p').textContent = test.startDate;
-                    container.querySelector('.grid > div:nth-child(2) p').textContent = test.endDate;
-                    container.querySelector('.grid > div:nth-child(3) p').textContent = test.tester;
-                    container.querySelector('.mb-4 p').textContent = test.notes;
-                } else {
-                    addTest(test);
-                }
-                closeTestModal();
-            } catch (err) {
-                console.error('Save test failed:', err);
-                alert('Failed to save test to Google Sheet.');
-            }
-        });
-
-    document.getElementById('complete-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const result = document.getElementById('complete-result').value;
-            const endDate = document.getElementById('complete-end-date').value;
-            const resultsText = document.getElementById('complete-results').value;
-
-            if (completingTest) {
-                const container = completingTest.closest('.bg-white');
-                const statusContainer = container.querySelector('.inline-block.bg-yellow-100');
-                if (statusContainer) statusContainer.remove();
-
-                const statusSpan = document.createElement('span');
-                statusSpan.className = result === 'passed' ? 'inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium' : 'inline-block bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-medium';
-                statusSpan.textContent = result === 'passed' ? '✅ Passed' : '❌ Failed';
-                container.querySelector('.flex.gap-2').before(statusSpan);
-
-                container.querySelector('.grid > div:nth-child(2) p').textContent = endDate;
-
-                const resultsDiv = document.createElement('div');
-                resultsDiv.className = 'mb-4';
-                resultsDiv.innerHTML = `
-                    <span class="font-medium text-mindful-midnight">Test Results:</span>
-                    <p class="text-gray-700">${resultsText}</p>
-                `;
-                const existingResults = container.querySelector('.mb-4:last-child');
-                if (existingResults) {
-                    existingResults.replaceWith(resultsDiv);
-                } else {
-                    container.appendChild(resultsDiv);
-                }
-                // Persist to Google Sheet (Completed Tests)
-                try {
-                    await fetch('/api/complete-test', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            // we don't track IDs in UI; create/have backend generate if not provided
-                            name: container.querySelector('h3').textContent,
-                            startDate: container.querySelector('.grid > div:nth-child(1) p').textContent,
-                            endDate,
-                            tester: container.querySelector('.grid > div:nth-child(3) p').textContent,
-                            result: result === 'passed' ? 'Passed' : 'Failed',
-                            results: resultsText,
-                        }),
-                    });
-                } catch (err) {
-                    console.error('Record completion failed:', err);
-                }
-            }
-
-            closeCompleteModal();
-        });
-
-        // Load data on first paint
-    // Trigger initial data load immediately
-    refreshIdeasList();
-    refreshActiveTests();
-    refreshCompletedTests();
-    </script>
+    <script type="module" src="/src/main.js"></script>
 </body>
 </html>
