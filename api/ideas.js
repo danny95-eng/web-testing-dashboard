@@ -41,12 +41,16 @@ async function ensureSheet(doc, title) {
 }
 
 module.exports = async (req, res) => {
+  console.log('API /api/ideas called with method:', req.method);
   try {
     const doc = await getDoc();
+    console.log('Doc loaded successfully');
     const sheet = await ensureSheet(doc, 'Ideas');
+    console.log('Sheet ensured');
 
     if (req.method === 'GET') {
       const ideas = await getIdeas(sheet);
+      console.log('Ideas fetched:', ideas.length);
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify(ideas));
@@ -69,6 +73,7 @@ module.exports = async (req, res) => {
       }
 
       const { title, description, submittedBy } = body || {};
+      console.log('POST data:', { title, description, submittedBy });
       if (!title || !description) {
         res.statusCode = 400;
         res.end(JSON.stringify({ error: 'Title and Description are required.' }));
@@ -83,6 +88,7 @@ module.exports = async (req, res) => {
         Status: 'Pending',
         Timestamp: new Date().toISOString(),
       });
+      console.log('Row added successfully');
 
       res.statusCode = 201;
       res.setHeader('Content-Type', 'application/json');
