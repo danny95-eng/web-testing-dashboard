@@ -442,6 +442,56 @@
         }
 
         // Idea functions
+        function parseIdeaDescription(desc) {
+            const out = { element: '', reasoning: '', howto: '', success: '' };
+            if (!desc) return out;
+            const lines = String(desc).split(/\r?\n/);
+            for (const line of lines) {
+                const [rawKey, ...rest] = line.split(':');
+                if (!rawKey || rest.length === 0) continue;
+                const key = rawKey.trim().toLowerCase();
+                const value = rest.join(':').trim();
+                if (key.startsWith('element')) out.element = value;
+                else if (key.startsWith('reasoning')) out.reasoning = value;
+                else if (key.startsWith('how to test')) out.howto = value;
+                else if (key.startsWith('success criteria')) out.success = value;
+            }
+            return out;
+        }
+
+        async function refreshIdeasList() {
+            const ideasList = document.getElementById('ideas-list');
+            ideasList.innerHTML = '';
+            try {
+                const resp = await fetch('/api/ideas');
+                if (!resp.ok) throw new Error('Failed to fetch ideas');
+                const rows = await resp.json();
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'text-gray-500';
+                    empty.textContent = 'No ideas yet. Add your first idea!';
+                    ideasList.appendChild(empty);
+                    return;
+                }
+                for (const row of rows) {
+                    const parsed = parseIdeaDescription(row.description);
+                    const idea = {
+                        name: row.title || 'Untitled',
+                        element: parsed.element,
+                        reasoning: parsed.reasoning,
+                        howto: parsed.howto,
+                        success: parsed.success,
+                    };
+                    addIdea(idea);
+                }
+            } catch (err) {
+                console.error('Failed loading ideas:', err);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-red-600';
+                errorDiv.textContent = 'Failed to load ideas from the server.';
+                ideasList.appendChild(errorDiv);
+            }
+        }
         function getIdeaData(element) {
             const container = element.closest('.bg-wellness-white');
             return {
@@ -734,6 +784,11 @@
             }
 
             closeCompleteModal();
+        });
+
+        // Load data on first paint
+        window.addEventListener('DOMContentLoaded', () => {
+            refreshIdeasList();
         });
     </script>
 </body>
