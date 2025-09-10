@@ -517,7 +517,7 @@
             };
         }
 
-        function addTest(test) {
+    async function addTest(test) {
             const testsList = document.getElementById('tests-list');
             const testItem = document.createElement('div');
             testItem.className = 'bg-white rounded-lg p-6 border shadow-sm border-l-4 border-vitality-violet';
@@ -638,7 +638,7 @@
             }
         });
 
-        document.getElementById('test-form').addEventListener('submit', function(e) {
+        document.getElementById('test-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const test = {
                 name: document.getElementById('test-name').value,
@@ -648,22 +648,42 @@
                 status: document.getElementById('test-status').value,
                 notes: document.getElementById('test-notes').value
             };
-
-            if (editingTest) {
-                const container = editingTest.closest('.bg-white');
-                container.querySelector('h3').textContent = test.name;
-                container.querySelector('.grid > div:nth-child(1) p').textContent = test.startDate;
-                container.querySelector('.grid > div:nth-child(2) p').textContent = test.endDate;
-                container.querySelector('.grid > div:nth-child(3) p').textContent = test.tester;
-                container.querySelector('.mb-4 p').textContent = test.notes;
-            } else {
-                addTest(test);
+            try {
+                const resp = await fetch('/api/tests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: test.name,
+                        startDate: test.startDate,
+                        expectedEndDate: test.endDate,
+                        tester: test.tester,
+                        status: test.status,
+                        notes: test.notes,
+                    }),
+                });
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to save test');
+                }
+                // Update UI
+                if (editingTest) {
+                    const container = editingTest.closest('.bg-white');
+                    container.querySelector('h3').textContent = test.name;
+                    container.querySelector('.grid > div:nth-child(1) p').textContent = test.startDate;
+                    container.querySelector('.grid > div:nth-child(2) p').textContent = test.endDate;
+                    container.querySelector('.grid > div:nth-child(3) p').textContent = test.tester;
+                    container.querySelector('.mb-4 p').textContent = test.notes;
+                } else {
+                    addTest(test);
+                }
+                closeTestModal();
+            } catch (err) {
+                console.error('Save test failed:', err);
+                alert('Failed to save test to Google Sheet.');
             }
-
-            closeTestModal();
         });
 
-        document.getElementById('complete-form').addEventListener('submit', function(e) {
+    document.getElementById('complete-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const result = document.getElementById('complete-result').value;
             const endDate = document.getElementById('complete-end-date').value;
@@ -692,6 +712,24 @@
                     existingResults.replaceWith(resultsDiv);
                 } else {
                     container.appendChild(resultsDiv);
+                }
+                // Persist to Google Sheet (Completed Tests)
+                try {
+                    await fetch('/api/complete-test', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            // we don't track IDs in UI; create/have backend generate if not provided
+                            name: container.querySelector('h3').textContent,
+                            startDate: container.querySelector('.grid > div:nth-child(1) p').textContent,
+                            endDate,
+                            tester: container.querySelector('.grid > div:nth-child(3) p').textContent,
+                            result: result === 'passed' ? 'Passed' : 'Failed',
+                            results: resultsText,
+                        }),
+                    });
+                } catch (err) {
+                    console.error('Record completion failed:', err);
                 }
             }
 
