@@ -347,9 +347,10 @@
     </div>
 
     <script>
-        let editingIdea = null;
+    let editingIdea = null;
         let editingTest = null;
         let completingTest = null;
+    console.log('[Dashboard] Script loaded');
 
         // Tab switching
         function switchTab(tabName) {
@@ -459,13 +460,15 @@
             return out;
         }
 
-    async function refreshIdeasList() {
+        async function refreshIdeasList() {
             const ideasList = document.getElementById('ideas-list');
-            ideasList.innerHTML = '';
+            ideasList.innerHTML = '<div class="text-gray-500">Loading ideas…</div>';
             try {
+                console.log('[Dashboard] Fetching /api/ideas');
                 const resp = await fetch('/api/ideas', { cache: 'no-store', headers: { 'Accept': 'application/json' } });
                 if (!resp.ok) throw new Error('Failed to fetch ideas');
                 const rows = await resp.json();
+                console.log('[Dashboard] Ideas response', rows);
                 if (!Array.isArray(rows) || rows.length === 0) {
                     const empty = document.createElement('div');
                     empty.className = 'text-gray-500';
@@ -473,6 +476,7 @@
                     ideasList.appendChild(empty);
                     return;
                 }
+                ideasList.innerHTML = '';
                 for (const row of rows) {
                     const parsed = parseIdeaDescription(row.description);
                     const idea = {
@@ -634,13 +638,15 @@
             alert('Displaying test results for: ' + testItem.querySelector('h3').textContent);
         }
 
-    async function refreshActiveTests() {
+        async function refreshActiveTests() {
             const testsList = document.getElementById('tests-list');
-            testsList.innerHTML = '';
+            testsList.innerHTML = '<div class="text-gray-500">Loading active tests…</div>';
             try {
+                console.log('[Dashboard] Fetching /api/tests');
                 const resp = await fetch('/api/tests', { cache: 'no-store', headers: { 'Accept': 'application/json' } });
                 if (!resp.ok) throw new Error('Failed to fetch active tests');
                 const rows = await resp.json();
+                console.log('[Dashboard] Active tests response', rows);
                 if (!Array.isArray(rows) || rows.length === 0) {
                     const empty = document.createElement('div');
                     empty.className = 'text-gray-500';
@@ -648,6 +654,7 @@
                     testsList.appendChild(empty);
                     return;
                 }
+                testsList.innerHTML = '';
                 for (const row of rows) {
                     const test = {
                         name: row['Name'] || 'Untitled Test',
@@ -711,13 +718,15 @@
             list.appendChild(item);
         }
 
-    async function refreshCompletedTests() {
+        async function refreshCompletedTests() {
             const completedList = document.getElementById('completed-list');
-            completedList.innerHTML = '';
+            completedList.innerHTML = '<div class="text-gray-500">Loading completed tests…</div>';
             try {
+                console.log('[Dashboard] Fetching /api/tests?status=completed');
                 const resp = await fetch('/api/tests?status=completed', { cache: 'no-store', headers: { 'Accept': 'application/json' } });
                 if (!resp.ok) throw new Error('Failed to fetch completed tests');
                 const rows = await resp.json();
+                console.log('[Dashboard] Completed tests response', rows);
                 if (!Array.isArray(rows) || rows.length === 0) {
                     const empty = document.createElement('div');
                     empty.className = 'text-gray-500';
@@ -725,6 +734,7 @@
                     completedList.appendChild(empty);
                     return;
                 }
+                completedList.innerHTML = '';
                 for (const row of rows) {
                     const test = {
                         name: row['Name'] || 'Untitled Test',
