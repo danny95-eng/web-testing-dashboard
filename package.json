@@ -3,8 +3,11 @@
   "version": "1.0.0",
   "description": "Backend server for the web testing dashboard",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
+    "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "vercel-build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "express": "^4.18.2",
