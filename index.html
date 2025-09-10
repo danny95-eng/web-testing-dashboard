@@ -897,11 +897,10 @@
         });
 
         // Load data on first paint
-        window.addEventListener('DOMContentLoaded', () => {
-            refreshIdeasList();
-            refreshActiveTests();
-            refreshCompletedTests();
-        });
+    // Trigger initial data load immediately
+    refreshIdeasList();
+    refreshActiveTests();
+    refreshCompletedTests();
     </script>
 </body>
 </html>
