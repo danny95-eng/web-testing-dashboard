@@ -74,18 +74,25 @@ module.exports = async (req, res) => {
       }
 
       const { title, description, submittedBy, screenshots } = body || {};
-      console.log('POST data:', { title, description, submittedBy, screenshots: screenshots ? 'present' : 'none' });
+      console.log('POST data received:', { title, description: description ? 'present' : 'none', submittedBy, screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
       if (!title || !description) {
         res.statusCode = 400;
         res.end(JSON.stringify({ error: 'Title and Description are required.' }));
         return;
       }
 
+      // Check if screenshots data is too large for Google Sheets
+      let processedScreenshots = screenshots || '';
+      if (processedScreenshots && processedScreenshots.length > 40000) {
+        console.warn('Screenshots data too large for Google Sheets, truncating...');
+        processedScreenshots = processedScreenshots.substring(0, 40000) + '...[truncated]';
+      }
+
       await sheet.addRow({
         ID: `IDEA-${Date.now()}`,
         Title: title,
         Description: description,
-        Screenshots: screenshots || '',
+        Screenshots: processedScreenshots,
         'Submitted By': submittedBy || 'Anonymous',
         Status: 'Pending',
         Timestamp: new Date().toISOString(),

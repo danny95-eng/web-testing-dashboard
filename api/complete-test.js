@@ -42,7 +42,15 @@ module.exports = async (req, res) => {
     }
 
     const { id, name, startDate, endDate, tester, result, results, screenshots } = body || {};
+    console.log('Complete test data received:', { id, name, startDate, endDate, tester, result, results: results ? 'present' : 'none', screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
     if (!name) { res.statusCode = 400; res.end(JSON.stringify({ error: 'name is required' })); return; }
+
+    // Check if screenshots data is too large for Google Sheets
+    let processedScreenshots = screenshots || '';
+    if (processedScreenshots && processedScreenshots.length > 40000) {
+      console.warn('Screenshots data too large for Google Sheets, truncating...');
+      processedScreenshots = processedScreenshots.substring(0, 40000) + '...[truncated]';
+    }
 
     const doc = getDoc();
     const headers = ['ID','Name','Start Date','End Date','Tester','Result','Results','Screenshots','Timestamp'];
@@ -55,7 +63,7 @@ module.exports = async (req, res) => {
       Tester: tester || '',
       Result: result || '',
       Results: results || '',
-      Screenshots: screenshots || '',
+      Screenshots: processedScreenshots,
       Timestamp: new Date().toISOString(),
     });
 

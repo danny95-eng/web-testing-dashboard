@@ -71,13 +71,23 @@ module.exports = async (req, res) => {
       }
 
       const { name, startDate, expectedEndDate, tester, status: st, notes, screenshots } = body || {};
+      console.log('POST data received:', { name, startDate, expectedEndDate, tester, status: st, notes: notes ? 'present' : 'none', screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
       if (!name) {
         res.statusCode = 400; res.setHeader('Content-Type','application/json');
         res.end(JSON.stringify({ error: 'Name is required.' }));
         return;
       }
+
+      // Check if screenshots data is too large for Google Sheets
+      let processedScreenshots = screenshots || '';
+      if (processedScreenshots && processedScreenshots.length > 40000) {
+        console.warn('Screenshots data too large for Google Sheets, truncating...');
+        processedScreenshots = processedScreenshots.substring(0, 40000) + '...[truncated]';
+      }
+
       const sheet = await ensureSheetWithHeaders(doc, 'Active Tests', ACTIVE_HEADERS);
       const id = `TEST-${Date.now()}`;
+      console.log('Adding row to sheet...');
       await sheet.addRow({
         ID: id,
         Name: name,
@@ -86,9 +96,10 @@ module.exports = async (req, res) => {
         Tester: tester || '',
         Status: st || 'In Progress',
         Notes: notes || '',
-        Screenshots: screenshots || '',
+        Screenshots: processedScreenshots,
         Timestamp: new Date().toISOString()
       });
+      console.log('Row added successfully');
       res.statusCode = 201; res.setHeader('Content-Type','application/json');
       res.end(JSON.stringify({ id }));
       return;

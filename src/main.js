@@ -287,7 +287,13 @@ console.log('[Dashboard] main.js loaded');
         let screenshots = [];
         if (row.screenshots) {
           try {
-            screenshots = JSON.parse(row.screenshots);
+            // Check if data looks like valid JSON and isn't truncated
+            if (row.screenshots.endsWith('...[truncated]')) {
+              console.warn('Screenshots data was truncated due to size limits');
+              screenshots = [{ name: 'Screenshot (truncated)', data: '' }];
+            } else {
+              screenshots = JSON.parse(row.screenshots);
+            }
           } catch (e) {
             console.warn('Failed to parse screenshots for idea:', row.title, e);
           }
@@ -336,7 +342,13 @@ console.log('[Dashboard] main.js loaded');
         let screenshots = [];
         if (row['Screenshots']) {
           try {
-            screenshots = JSON.parse(row['Screenshots']);
+            // Check if data looks like valid JSON and isn't truncated
+            if (row['Screenshots'].endsWith('...[truncated]')) {
+              console.warn('Screenshots data was truncated due to size limits');
+              screenshots = [{ name: 'Screenshot (truncated)', data: '' }];
+            } else {
+              screenshots = JSON.parse(row['Screenshots']);
+            }
           } catch (e) {
             console.warn('Failed to parse screenshots for test:', row['Name'], e);
           }
@@ -428,7 +440,13 @@ console.log('[Dashboard] main.js loaded');
         let screenshots = [];
         if (row['Screenshots']) {
           try {
-            screenshots = JSON.parse(row['Screenshots']);
+            // Check if data looks like valid JSON and isn't truncated
+            if (row['Screenshots'].endsWith('...[truncated]')) {
+              console.warn('Screenshots data was truncated due to size limits');
+              screenshots = [{ name: 'Screenshot (truncated)', data: '' }];
+            } else {
+              screenshots = JSON.parse(row['Screenshots']);
+            }
           } catch (e) {
             console.warn('Failed to parse screenshots for completed test:', row['Name'], e);
           }
