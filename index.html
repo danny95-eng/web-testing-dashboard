@@ -634,6 +634,116 @@
             alert('Displaying test results for: ' + testItem.querySelector('h3').textContent);
         }
 
+        async function refreshActiveTests() {
+            const testsList = document.getElementById('tests-list');
+            testsList.innerHTML = '';
+            try {
+                const resp = await fetch('/api/tests');
+                if (!resp.ok) throw new Error('Failed to fetch active tests');
+                const rows = await resp.json();
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'text-gray-500';
+                    empty.textContent = 'No active tests.';
+                    testsList.appendChild(empty);
+                    return;
+                }
+                for (const row of rows) {
+                    const test = {
+                        name: row['Name'] || 'Untitled Test',
+                        startDate: row['Start Date'] || '',
+                        endDate: row['Expected End Date'] || '',
+                        tester: row['Tester'] || '',
+                        notes: row['Notes'] || '',
+                    };
+                    addTest(test);
+                }
+            } catch (err) {
+                console.error('Failed loading active tests:', err);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-red-600';
+                errorDiv.textContent = 'Failed to load active tests from the server.';
+                testsList.appendChild(errorDiv);
+            }
+        }
+
+        function addCompletedTestCard(test) {
+            const list = document.getElementById('completed-list');
+            const item = document.createElement('div');
+            item.className = 'bg-white rounded-lg p-6 border shadow-sm border-l-4 border-green-500';
+            item.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-semibold text-mindful-midnight text-lg">${test.name}</h3>
+                        <div class="flex gap-2 mt-1">
+                            <span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">${test.result || 'Completed'}</span>
+                            <span class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">Completed</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="viewTestResults(this)" class="text-potent-purple hover:text-darker-violet text-sm">📊 View Results</button>
+                        <button onclick="deleteTest(this)" class="text-red-600 hover:text-red-800 text-sm">🗑️ Delete</button>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Start Date:</span>
+                        <p class="text-gray-700">${test.startDate || ''}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-mindful-midnight">End Date:</span>
+                        <p class="text-gray-700">${test.endDate || ''}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Duration:</span>
+                        <p class="text-gray-700">${test.duration || ''}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Tester:</span>
+                        <p class="text-gray-700">${test.tester || ''}</p>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <span class="font-medium text-mindful-midnight">Test Results:</span>
+                    <p class="text-gray-700">${test.results || ''}</p>
+                </div>
+            `;
+            list.appendChild(item);
+        }
+
+        async function refreshCompletedTests() {
+            const completedList = document.getElementById('completed-list');
+            completedList.innerHTML = '';
+            try {
+                const resp = await fetch('/api/tests?status=completed');
+                if (!resp.ok) throw new Error('Failed to fetch completed tests');
+                const rows = await resp.json();
+                if (!Array.isArray(rows) || rows.length === 0) {
+                    const empty = document.createElement('div');
+                    empty.className = 'text-gray-500';
+                    empty.textContent = 'No completed tests.';
+                    completedList.appendChild(empty);
+                    return;
+                }
+                for (const row of rows) {
+                    const test = {
+                        name: row['Name'] || 'Untitled Test',
+                        startDate: row['Start Date'] || '',
+                        endDate: row['End Date'] || '',
+                        tester: row['Tester'] || '',
+                        result: row['Result'] || 'Completed',
+                        results: row['Results'] || '',
+                    };
+                    addCompletedTestCard(test);
+                }
+            } catch (err) {
+                console.error('Failed loading completed tests:', err);
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'text-red-600';
+                errorDiv.textContent = 'Failed to load completed tests from the server.';
+                completedList.appendChild(errorDiv);
+            }
+        }
         // Form handlers
         document.getElementById('idea-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -789,6 +899,8 @@
         // Load data on first paint
         window.addEventListener('DOMContentLoaded', () => {
             refreshIdeasList();
+            refreshActiveTests();
+            refreshCompletedTests();
         });
     </script>
 </body>
