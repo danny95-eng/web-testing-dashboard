@@ -239,6 +239,37 @@ console.log('[Dashboard] main.js loaded');
     }));
   }
 
+  function parseIdeaDescription(description) {
+    const lines = description.split('\n');
+    const result = {
+      element: '',
+      reasoning: '',
+      howto: '',
+      success: '',
+      screenshots: []
+    };
+
+    lines.forEach(line => {
+      if (line.startsWith('Element: ')) {
+        result.element = line.substring('Element: '.length).trim();
+      } else if (line.startsWith('Reasoning: ')) {
+        result.reasoning = line.substring('Reasoning: '.length).trim();
+      } else if (line.startsWith('How to Test: ')) {
+        result.howto = line.substring('How to Test: '.length).trim();
+      } else if (line.startsWith('Success Criteria: ')) {
+        result.success = line.substring('Success Criteria: '.length).trim();
+      } else if (line.startsWith('Screenshots: ')) {
+        const screenshotNames = line.substring('Screenshots: '.length).trim();
+        if (screenshotNames) {
+          // For now, we'll just store the names since we don't have the actual image data
+          result.screenshots = screenshotNames.split(', ').map(name => ({ name, data: '' }));
+        }
+      }
+    });
+
+    return result;
+  }
+
   async function refreshIdeasList(){
     const ideasList = document.getElementById('ideas-list');
     if (ideasList) ideasList.innerHTML = '<div class="text-gray-500">Loading ideas…</div>';
