@@ -1,5 +1,6 @@
 // Entry point for Vite. Moved from inline script in index.html so it always executes.
 // Minimal logging to verify execution.
+console.log('[Dashboard] Script starting');
 console.log('[Dashboard] main.js loaded');
 
 // Expose functions needed by inline HTML onclicks, while keeping most code scoped.
