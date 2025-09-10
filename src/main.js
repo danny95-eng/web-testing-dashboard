@@ -403,12 +403,14 @@ console.log('[Dashboard] main.js loaded');
       reasoning: document.getElementById('idea-reasoning')?.value.trim(),
       howto: document.getElementById('idea-howto')?.value.trim(),
       success: document.getElementById('idea-success')?.value.trim(),
+      screenshots: Array.from(document.getElementById('idea-screenshots')?.files || []).map(f => f.name),
     };
     const description = [
       idea.element && `Element: ${idea.element}`,
       idea.reasoning && `Reasoning: ${idea.reasoning}`,
       idea.howto && `How to Test: ${idea.howto}`,
       idea.success && `Success Criteria: ${idea.success}`,
+      idea.screenshots.length && `Screenshots: ${idea.screenshots.join(', ')}`,
     ].filter(Boolean).join('\n');
     try {
       const resp = await fetch('/api/ideas', {
@@ -450,6 +452,7 @@ console.log('[Dashboard] main.js loaded');
       tester: document.getElementById('test-tester')?.value,
       status: document.getElementById('test-status')?.value,
       notes: document.getElementById('test-notes')?.value,
+      screenshots: Array.from(document.getElementById('test-screenshots')?.files || []).map(f => f.name),
     };
     try {
       const resp = await fetch('/api/tests', {
@@ -461,7 +464,7 @@ console.log('[Dashboard] main.js loaded');
           expectedEndDate: test.endDate,
           tester: test.tester,
           status: test.status,
-          notes: test.notes,
+          notes: test.notes + (test.screenshots.length ? `\nScreenshots: ${test.screenshots.join(', ')}` : ''),
         }),
       });
       if (!resp.ok){
