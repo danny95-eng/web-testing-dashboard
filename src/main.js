@@ -1,6 +1,5 @@
 // Entry point for Vite. Moved from inline script in index.html so it always executes.
 // Minimal logging to verify execution.
-alert("Script loaded - if you see this, JS is running!");
 console.log('[Dashboard] Script starting');
 console.log('[Dashboard] main.js loaded');
 
