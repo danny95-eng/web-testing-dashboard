@@ -8,6 +8,7 @@ console.log('[Dashboard] main.js loaded');
   let editingIdea = null;
   let editingTest = null;
   let completingTest = null;
+  let creatingFromIdea = null;
 
   // Tab switching
   function switchTab(tabName) {
@@ -120,6 +121,14 @@ console.log('[Dashboard] main.js loaded');
     const ideasList = document.getElementById('ideas-list');
     const ideaItem = document.createElement('div');
     ideaItem.className = 'bg-wellness-white rounded-lg p-4 border-l-4 border-potent-purple shadow-sm';
+    let screenshotsHtml = '';
+    if (idea.screenshots && idea.screenshots.length) {
+      screenshotsHtml = '<div class="mt-2"><span class="font-medium text-mindful-midnight text-sm">Screenshots:</span><div class="flex gap-2 mt-1">';
+      idea.screenshots.forEach(s => {
+        screenshotsHtml += `<img src="${s.data}" alt="${s.name}" class="w-20 h-16 object-cover rounded">`;
+      });
+      screenshotsHtml += '</div></div>';
+    }
     ideaItem.innerHTML = `
       <div class="flex justify-between items-start mb-2">
         <h3 class="font-semibold text-mindful-midnight">${idea.name}</h3>
@@ -146,13 +155,14 @@ console.log('[Dashboard] main.js loaded');
       <div class="mt-2">
         <span class="font-medium text-mindful-midnight text-sm">Success Criteria:</span>
         <p class="text-gray-700 text-sm">${idea.success}</p>
-      </div>`;
+      </div>${screenshotsHtml}`;
     ideasList?.prepend(ideaItem);
   }
   function editIdea(button){ openIdeaModal(button.closest('.bg-wellness-white')); }
   function deleteIdea(button){ button.closest('.bg-wellness-white')?.remove(); }
   function createTestFromIdea(button){
     const ideaData = getIdeaData(button.closest('.bg-wellness-white'));
+    creatingFromIdea = button.closest('.bg-wellness-white');
     openTestModal();
     const name = document.getElementById('test-name');
     const notes = document.getElementById('test-notes');
@@ -164,6 +174,14 @@ console.log('[Dashboard] main.js loaded');
     const testsList = document.getElementById('tests-list');
     const testItem = document.createElement('div');
     testItem.className = 'bg-white rounded-lg p-6 border shadow-sm border-l-4 border-vitality-violet';
+    let screenshotsHtml = '';
+    if (test.screenshots && test.screenshots.length) {
+      screenshotsHtml = '<div class="bg-wellness-white p-3 rounded mt-4"><span class="font-medium text-mindful-midnight text-sm">Screenshots:</span><div class="flex gap-2 mt-2">';
+      test.screenshots.forEach(s => {
+        screenshotsHtml += `<img src="${s.data}" alt="${s.name}" class="w-20 h-16 object-cover rounded">`;
+      });
+      screenshotsHtml += '</div></div>';
+    }
     testItem.innerHTML = `
       <div class="flex justify-between items-start mb-4">
         <div>
@@ -200,7 +218,7 @@ console.log('[Dashboard] main.js loaded');
           <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">📱 Mobile</div>
           <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">💻 Desktop</div>
         </div>
-      </div>`;
+      </div>${screenshotsHtml}`;
     testsList?.prepend(testItem);
   }
   function editTest(button){ openTestModal(button.closest('.bg-white')); }
@@ -211,21 +229,14 @@ console.log('[Dashboard] main.js loaded');
     alert('Displaying test results for: ' + (testItem?.querySelector('h3')?.textContent || ''));
   }
 
-  function parseIdeaDescription(desc){
-    const out = { element: '', reasoning: '', howto: '', success: '' };
-    if (!desc) return out;
-    const lines = String(desc).split(/\r?\n/);
-    for (const line of lines) {
-      const [rawKey, ...rest] = line.split(':');
-      if (!rawKey || rest.length === 0) continue;
-      const key = rawKey.trim().toLowerCase();
-      const value = rest.join(':').trim();
-      if (key.startsWith('element')) out.element = value;
-      else if (key.startsWith('reasoning')) out.reasoning = value;
-      else if (key.startsWith('how to test')) out.howto = value;
-      else if (key.startsWith('success criteria')) out.success = value;
-    }
-    return out;
+  function readFilesAsDataURLs(files) {
+    return Promise.all(Array.from(files).map(file => {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, data: reader.result });
+        reader.readAsDataURL(file);
+      });
+    }));
   }
 
   async function refreshIdeasList(){
@@ -396,6 +407,9 @@ console.log('[Dashboard] main.js loaded');
   // Form handlers
   document.getElementById('idea-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const screenshotsInput = document.getElementById('idea-screenshots');
+    const screenshots = screenshotsInput?.files || [];
+    const screenshotData = await readFilesAsDataURLs(screenshots);
     const idea = {
       name: document.getElementById('idea-name')?.value.trim(),
       submitter: document.getElementById('idea-submitter')?.value.trim(),
@@ -403,14 +417,14 @@ console.log('[Dashboard] main.js loaded');
       reasoning: document.getElementById('idea-reasoning')?.value.trim(),
       howto: document.getElementById('idea-howto')?.value.trim(),
       success: document.getElementById('idea-success')?.value.trim(),
-      screenshots: Array.from(document.getElementById('idea-screenshots')?.files || []).map(f => f.name),
+      screenshots: screenshotData,
     };
     const description = [
       idea.element && `Element: ${idea.element}`,
       idea.reasoning && `Reasoning: ${idea.reasoning}`,
       idea.howto && `How to Test: ${idea.howto}`,
       idea.success && `Success Criteria: ${idea.success}`,
-      idea.screenshots.length && `Screenshots: ${idea.screenshots.join(', ')}`,
+      idea.screenshots.length && `Screenshots: ${idea.screenshots.map(s => s.name).join(', ')}`,
     ].filter(Boolean).join('\n');
     try {
       const resp = await fetch('/api/ideas', {
@@ -445,6 +459,9 @@ console.log('[Dashboard] main.js loaded');
 
   document.getElementById('test-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const screenshotsInput = document.getElementById('test-screenshots');
+    const screenshots = screenshotsInput?.files || [];
+    const screenshotData = await readFilesAsDataURLs(screenshots);
     const test = {
       name: document.getElementById('test-name')?.value,
       startDate: document.getElementById('test-start-date')?.value,
@@ -452,7 +469,7 @@ console.log('[Dashboard] main.js loaded');
       tester: document.getElementById('test-tester')?.value,
       status: document.getElementById('test-status')?.value,
       notes: document.getElementById('test-notes')?.value,
-      screenshots: Array.from(document.getElementById('test-screenshots')?.files || []).map(f => f.name),
+      screenshots: screenshotData,
     };
     try {
       const resp = await fetch('/api/tests', {
@@ -464,7 +481,7 @@ console.log('[Dashboard] main.js loaded');
           expectedEndDate: test.endDate,
           tester: test.tester,
           status: test.status,
-          notes: test.notes + (test.screenshots.length ? `\nScreenshots: ${test.screenshots.join(', ')}` : ''),
+          notes: test.notes + (test.screenshots.length ? `\nScreenshots: ${test.screenshots.map(s => s.name).join(', ')}` : ''),
         }),
       });
       if (!resp.ok){
@@ -480,6 +497,10 @@ console.log('[Dashboard] main.js loaded');
         container.querySelector('.mb-4 p').textContent = test.notes;
       } else {
         addTest(test);
+      }
+      if (creatingFromIdea) {
+        creatingFromIdea.remove();
+        creatingFromIdea = null;
       }
       closeTestModal();
     } catch (err){
