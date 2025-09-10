@@ -96,12 +96,21 @@ console.log('[Dashboard] main.js loaded');
   // Data helpers
   function getIdeaData(element){
     const container = element.closest('.bg-wellness-white');
+    const screenshots = [];
+    const screenshotElements = container?.querySelectorAll('.flex.gap-2.mt-1 img');
+    screenshotElements?.forEach(img => {
+      screenshots.push({
+        name: img.alt || 'Screenshot',
+        data: img.src
+      });
+    });
     return {
       name: container?.querySelector('h3')?.textContent?.trim() || '',
       element: container?.querySelector('.grid > div:nth-child(1) p')?.textContent?.trim() || '',
       reasoning: container?.querySelector('.grid > div:nth-child(2) p')?.textContent?.trim() || '',
       howto: container?.querySelector('.grid > div:nth-child(3) p')?.textContent?.trim() || '',
-      success: container?.querySelector('.mt-2 p')?.textContent?.trim() || ''
+      success: container?.querySelector('.mt-2 p')?.textContent?.trim() || '',
+      screenshots: screenshots
     };
   }
   function getTestData(element){
@@ -125,7 +134,7 @@ console.log('[Dashboard] main.js loaded');
     if (idea.screenshots && idea.screenshots.length) {
       screenshotsHtml = '<div class="mt-2"><span class="font-medium text-mindful-midnight text-sm">Screenshots:</span><div class="flex gap-2 mt-1">';
       idea.screenshots.forEach(s => {
-        screenshotsHtml += `<img src="${s.data}" alt="${s.name}" class="w-20 h-16 object-cover rounded">`;
+        screenshotsHtml += `<img src="${s.data}" alt="${s.name}" class="w-20 h-16 object-cover rounded cursor-pointer hover:opacity-80" onclick="enlargeImage('${s.data}', '${s.name}')">`;
       });
       screenshotsHtml += '</div></div>';
     }
@@ -168,6 +177,8 @@ console.log('[Dashboard] main.js loaded');
     const notes = document.getElementById('test-notes');
     if (name) name.value = ideaData.name;
     if (notes) notes.value = `Created from idea: ${ideaData.reasoning}`;
+    // Store screenshot data to be used when submitting the test
+    window.pendingScreenshots = ideaData.screenshots;
   }
 
   async function addTest(test){
@@ -215,10 +226,14 @@ console.log('[Dashboard] main.js loaded');
       <div class="bg-wellness-white p-3 rounded">
         <span class="font-medium text-mindful-midnight text-sm">Screenshots:</span>
         <div class="mt-2 flex gap-2">
+          ${test.screenshots && test.screenshots.length ? test.screenshots.map(s => 
+            `<img src="${s.data}" alt="${s.name}" class="w-20 h-16 object-cover rounded cursor-pointer hover:opacity-80" onclick="enlargeImage('${s.data}', '${s.name}')">`
+          ).join('') : `
           <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">📱 Mobile</div>
           <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">💻 Desktop</div>
+          `}
         </div>
-      </div>${screenshotsHtml}`;
+      </div>`;
     testsList?.prepend(testItem);
   }
   function editTest(button){ openTestModal(button.closest('.bg-white')); }
@@ -229,14 +244,19 @@ console.log('[Dashboard] main.js loaded');
     alert('Displaying test results for: ' + (testItem?.querySelector('h3')?.textContent || ''));
   }
 
-  function readFilesAsDataURLs(files) {
-    return Promise.all(Array.from(files).map(file => {
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve({ name: file.name, data: reader.result });
-        reader.readAsDataURL(file);
-      });
-    }));
+  function enlargeImage(src, alt) {
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
+    modal.innerHTML = `
+      <div class="relative max-w-4xl max-h-screen p-4">
+        <img src="${src}" alt="${alt}" class="max-w-full max-h-full object-contain">
+        <button onclick="this.parentElement.parentElement.remove()" class="absolute top-2 right-2 bg-white rounded-full w-8 h-8 flex items-center justify-center text-black hover:bg-gray-200">×</button>
+      </div>
+    `;
+    modal.onclick = (e) => {
+      if (e.target === modal) modal.remove();
+    };
+    document.body.appendChild(modal);
   }
 
   function parseIdeaDescription(description) {
@@ -413,7 +433,16 @@ console.log('[Dashboard] main.js loaded');
       <div class="mb-4">
         <span class="font-medium text-mindful-midnight">Test Results:</span>
         <p class="text-gray-700">${test.results || ''}</p>
-      </div>`;
+      </div>
+      ${test.screenshots && test.screenshots.length ? `
+      <div class="bg-wellness-white p-3 rounded">
+        <span class="font-medium text-mindful-midnight text-sm">Screenshots:</span>
+        <div class="mt-2 flex gap-2">
+          ${test.screenshots.map(s => 
+            `<img src="${s.data}" alt="${s.name}" class="w-20 h-16 object-cover rounded cursor-pointer hover:opacity-80" onclick="enlargeImage('${s.data}', '${s.name}')">`
+          ).join('')}
+        </div>
+      </div>` : ''}`;
     list?.appendChild(item);
   }
 
@@ -531,7 +560,13 @@ console.log('[Dashboard] main.js loaded');
     e.preventDefault();
     const screenshotsInput = document.getElementById('test-screenshots');
     const screenshots = screenshotsInput?.files || [];
-    const screenshotData = await readFilesAsDataURLs(screenshots);
+    let screenshotData = await readFilesAsDataURLs(screenshots);
+    
+    // If no new screenshots were uploaded but we have pending screenshots from an idea, use those
+    if (screenshotData.length === 0 && window.pendingScreenshots) {
+      screenshotData = window.pendingScreenshots;
+    }
+    
     const test = {
       name: document.getElementById('test-name')?.value,
       startDate: document.getElementById('test-start-date')?.value,
@@ -573,6 +608,8 @@ console.log('[Dashboard] main.js loaded');
         creatingFromIdea.remove();
         creatingFromIdea = null;
       }
+      // Clear pending screenshots
+      window.pendingScreenshots = null;
       closeTestModal();
     } catch (err){
       console.error('Save test failed:', err);
@@ -601,6 +638,14 @@ console.log('[Dashboard] main.js loaded');
         <p class="text-gray-700">${resultsText}</p>`;
       const existingResults = container.querySelector('.mb-4:last-child');
       if (existingResults){ existingResults.replaceWith(resultsDiv); } else { container.appendChild(resultsDiv); }
+      
+      // Extract screenshot data from the test
+      const screenshotElements = container.querySelectorAll('.flex.gap-2 img');
+      const screenshots = Array.from(screenshotElements).map(img => ({
+        name: img.alt || 'Screenshot',
+        data: img.src
+      }));
+      
       try {
         await fetch('/api/complete-test', {
           method: 'POST',
@@ -612,6 +657,7 @@ console.log('[Dashboard] main.js loaded');
             tester: container.querySelector('.grid > div:nth-child(3) p')?.textContent,
             result: result === 'passed' ? 'Passed' : 'Failed',
             results: resultsText,
+            screenshots: screenshots.length ? JSON.stringify(screenshots) : '',
           }),
         });
       } catch (err){
@@ -644,5 +690,6 @@ console.log('[Dashboard] main.js loaded');
     deleteTest,
     completeTest,
     viewTestResults,
+    enlargeImage,
   });
 })();
