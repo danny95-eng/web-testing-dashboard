@@ -224,6 +224,10 @@
                     <input type="text" id="idea-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" placeholder="e.g., Button Click Animation">
                 </div>
                 <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Submitted By</label>
+                    <input type="text" id="idea-submitter" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" placeholder="Your name (optional)">
+                </div>
+                <div>
                     <label class="block text-sm font-medium text-mindful-midnight mb-1">Element Being Tested</label>
                     <input type="text" id="idea-element" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" placeholder="e.g., Submit button on contact form">
                 </div>
@@ -581,28 +585,57 @@
         }
 
         // Form handlers
-        document.getElementById('idea-form').addEventListener('submit', function(e) {
+        document.getElementById('idea-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const idea = {
-                name: document.getElementById('idea-name').value,
-                element: document.getElementById('idea-element').value,
-                reasoning: document.getElementById('idea-reasoning').value,
-                howto: document.getElementById('idea-howto').value,
-                success: document.getElementById('idea-success').value,
+                name: document.getElementById('idea-name').value.trim(),
+                submitter: document.getElementById('idea-submitter').value.trim(),
+                element: document.getElementById('idea-element').value.trim(),
+                reasoning: document.getElementById('idea-reasoning').value.trim(),
+                howto: document.getElementById('idea-howto').value.trim(),
+                success: document.getElementById('idea-success').value.trim(),
             };
 
-            if (editingIdea) {
-                const container = editingIdea.closest('.bg-wellness-white');
-                container.querySelector('h3').textContent = idea.name;
-                container.querySelector('.grid > div:nth-child(1) p').textContent = idea.element;
-                container.querySelector('.grid > div:nth-child(2) p').textContent = idea.reasoning;
-                container.querySelector('.grid > div:nth-child(3) p').textContent = idea.howto;
-                container.querySelector('.mt-2 p').textContent = idea.success;
-            } else {
-                addIdea(idea);
-            }
+            // Build description for Google Sheet from fields beyond title
+            const description = [
+                idea.element && `Element: ${idea.element}`,
+                idea.reasoning && `Reasoning: ${idea.reasoning}`,
+                idea.howto && `How to Test: ${idea.howto}`,
+                idea.success && `Success Criteria: ${idea.success}`,
+            ].filter(Boolean).join('\n');
 
-            closeIdeaModal();
+            try {
+                const resp = await fetch('/api/ideas', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: idea.name,
+                        description,
+                        submittedBy: idea.submitter || undefined,
+                    }),
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    throw new Error(err.error || 'Failed to save idea');
+                }
+
+                // Update UI only after successful save
+                if (editingIdea) {
+                    const container = editingIdea.closest('.bg-wellness-white');
+                    container.querySelector('h3').textContent = idea.name;
+                    container.querySelector('.grid > div:nth-child(1) p').textContent = idea.element;
+                    container.querySelector('.grid > div:nth-child(2) p').textContent = idea.reasoning;
+                    container.querySelector('.grid > div:nth-child(3) p').textContent = idea.howto;
+                    container.querySelector('.mt-2 p').textContent = idea.success;
+                } else {
+                    addIdea(idea);
+                }
+                closeIdeaModal();
+            } catch (err) {
+                console.error('Save idea failed:', err);
+                alert('Failed to save idea to Google Sheet. Please try again.');
+            }
         });
 
         document.getElementById('test-form').addEventListener('submit', function(e) {
