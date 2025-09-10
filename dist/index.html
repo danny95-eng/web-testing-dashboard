@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Testing Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'potent-purple': '#683CF5',
+                        'vitality-violet': '#A15CFF',
+                        'darker-violet': '#8E3DFF',
+                        'fearless-fuchsia': '#A48AF9',
+                        'mindful-midnight': '#210847',
+                        'tenacious-turquoise': '#83EDFF',
+                        'wellness-white': '#F2F9FC'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .modal { display: none; }
+        .modal.active { display: flex; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-wellness-white to-fearless-fuchsia/20 min-h-screen">
+    <div class="container mx-auto px-6 py-8">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border-l-4 border-potent-purple">
+            <div class="flex items-center gap-4 mb-4">
+                <!-- Logo Container -->
+<div class="w-40 h-40 bg-white rounded-lg flex items-center justify-center p-1 shadow-inner">
+    <img src="/assets/CheqUp_Social-DP_Dark_RGB-DaBTadZf.png" alt="CheqUp Company Logo" class="h-full w-full object-contain">
+</div>
+                <div>
+                    <h1 class="text-3xl font-bold text-mindful-midnight mb-1">Web Testing Dashboard</h1>
+                    <p class="text-gray-600">Manage test ideas, create tests, and track your website testing progress</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-xl shadow-lg mb-8">
+            <div class="flex border-b">
+                <button onclick="switchTab('ideas')" class="tab-btn px-6 py-4 font-medium text-potent-purple border-b-2 border-potent-purple bg-fearless-fuchsia/10" data-tab="ideas">
+                    💡 Test Ideas
+                </button>
+                <button onclick="switchTab('tests')" class="tab-btn px-6 py-4 font-medium text-gray-600 hover:text-potent-purple hover:bg-fearless-fuchsia/10 transition-colors" data-tab="tests">
+                    🧪 Active Tests
+                </button>
+                <button onclick="switchTab('completed')" class="tab-btn px-6 py-4 font-medium text-gray-600 hover:text-potent-purple hover:bg-fearless-fuchsia/10 transition-colors" data-tab="completed">
+                    ✅ Completed Tests
+                </button>
+            </div>
+
+            <!-- Test Ideas Tab -->
+            <div id="ideas-tab" class="tab-content active p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-mindful-midnight">Test Ideas</h2>
+                    <button onclick="openIdeaModal()" class="bg-gradient-to-r from-potent-purple to-vitality-violet hover:from-darker-violet hover:to-potent-purple text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg">
+                        + Add New Idea
+                    </button>
+                </div>
+
+                <div id="ideas-list" class="space-y-4">
+                    <!-- Sample idea -->
+                    <div class="bg-wellness-white rounded-lg p-4 border-l-4 border-potent-purple shadow-sm">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-semibold text-mindful-midnight">Navigation Menu Responsiveness</h3>
+                            <div class="flex gap-2">
+                                <button onclick="editIdea(this)" class="text-potent-purple hover:text-darker-violet text-sm">✏️ Edit</button>
+                                <button onclick="createTestFromIdea(this)" class="text-black hover:text-vitality-violet text-sm">🧪 Create Test</button>
+                                <button onclick="deleteIdea(this)" class="text-red-600 hover:text-red-800 text-sm">🗑️ Delete</button>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Element:</span>
+                                <p class="text-gray-700">Main navigation menu</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Reasoning:</span>
+                                <p class="text-gray-700">Ensure menu works on all device sizes</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-mindful-midnight">How to Test:</span>
+                                <p class="text-gray-700">Resize browser, test on mobile devices</p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="font-medium text-mindful-midnight text-sm">Success Criteria:</span>
+                            <p class="text-gray-700 text-sm">Menu collapses properly, hamburger menu works, all links accessible</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Tests Tab -->
+            <div id="tests-tab" class="tab-content p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-mindful-midnight">Active Tests</h2>
+                    <button onclick="openTestModal()" class="bg-gradient-to-r from-tenacious-turquoise to-vitality-violet hover:from-vitality-violet hover:to-tenacious-turquoise text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 shadow-lg">
+                        + Create New Test
+                    </button>
+                </div>
+
+                <div id="tests-list" class="space-y-4">
+                    <!-- Sample test -->
+                    <div class="bg-white rounded-lg p-6 border shadow-sm border-l-4 border-vitality-violet">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-semibold text-mindful-midnight text-lg">Navigation Menu Test</h3>
+                                <span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm font-medium">In Progress</span>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="editTest(this)" class="text-potent-purple hover:text-darker-violet text-sm">✏️ Edit</button>
+                                <button onclick="completeTest(this)" class="text-tenacious-turquoise hover:text-vitality-violet text-sm">✅ Complete</button>
+                                <button onclick="deleteTest(this)" class="text-red-600 hover:text-red-800 text-sm">🗑️ Delete</button>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Start Date:</span>
+                                <p class="text-gray-700">2024-01-15</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Expected End:</span>
+                                <p class="text-gray-700">2024-01-20</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Tester:</span>
+                                <p class="text-gray-700">John Doe</p>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <span class="font-medium text-mindful-midnight">Notes:</span>
+                            <p class="text-gray-700">Testing responsive behavior across different screen sizes</p>
+                        </div>
+                        <div class="bg-wellness-white p-3 rounded">
+                            <span class="font-medium text-mindful-midnight text-sm">Screenshots:</span>
+                            <div class="mt-2 flex gap-2">
+                                <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">
+                                    📱 Mobile
+                                </div>
+                                <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">
+                                    💻 Desktop
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Completed Tests Tab -->
+            <div id="completed-tab" class="tab-content p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-mindful-midnight">Completed Tests</h2>
+                    <div class="text-sm text-gray-600">
+                        <span class="bg-green-100 text-green-800 px-2 py-1 rounded mr-2">✅ Passed</span>
+                        <span class="bg-red-100 text-red-800 px-2 py-1 rounded">❌ Failed</span>
+                    </div>
+                </div>
+
+                <div id="completed-list" class="space-y-4">
+                    <!-- Sample completed test -->
+                    <div class="bg-white rounded-lg p-6 border shadow-sm border-l-4 border-green-500">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="font-semibold text-mindful-midnight text-lg">Button Hover Effects Test</h3>
+                                <div class="flex gap-2 mt-1">
+                                    <span class="inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium">✅ Passed</span>
+                                    <span class="inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-sm">Completed</span>
+                                </div>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="viewTestResults(this)" class="text-potent-purple hover:text-darker-violet text-sm">📊 View Results</button>
+                                <button onclick="deleteTest(this)" class="text-red-600 hover:text-red-800 text-sm">🗑️ Delete</button>
+                            </div>
+                        </div>
+                        <div class="grid md:grid-cols-4 gap-4 mb-4">
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Start Date:</span>
+                                <p class="text-gray-700">2024-01-10</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-mindful-midnight">End Date:</span>
+                                <p class="text-gray-700">2024-01-12</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Duration:</span>
+                                <p class="text-gray-700">2 days</p>
+                            </div>
+                            <div>
+                                <span class="font-medium text-mindful-midnight">Tester:</span>
+                                <p class="text-gray-700">Jane Smith</p>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <span class="font-medium text-mindful-midnight">Test Results:</span>
+                            <p class="text-gray-700">All hover effects working correctly across browsers. Animation smooth and responsive.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Idea Modal -->
+    <div id="idea-modal" class="modal fixed inset-0 bg-mindful-midnight/50 items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-mindful-midnight" id="idea-modal-title">Add New Test Idea</h3>
+                <button onclick="closeIdeaModal()" class="text-gray-500 hover:text-mindful-midnight text-2xl">&times;</button>
+            </div>
+            <form id="idea-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Test Name</label>
+                    <input type="text" id="idea-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" placeholder="e.g., Button Click Animation">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Element Being Tested</label>
+                    <input type="text" id="idea-element" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" placeholder="e.g., Submit button on contact form">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Reasoning</label>
+                    <textarea id="idea-reasoning" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" rows="3" placeholder="Why is this test important?"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">How to Test</label>
+                    <textarea id="idea-howto" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" rows="3" placeholder="Step-by-step testing process"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Success Criteria</label>
+                    <textarea id="idea-success" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" rows="3" placeholder="How do you judge if the test passes?"></textarea>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="bg-gradient-to-r from-potent-purple to-vitality-violet hover:from-darker-violet hover:to-potent-purple text-white px-6 py-2 rounded-lg font-medium transition-all duration-200">
+                        Save Idea
+                    </button>
+                    <button type="button" onclick="closeIdeaModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Test Modal -->
+    <div id="test-modal" class="modal fixed inset-0 bg-mindful-midnight/50 items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-mindful-midnight" id="test-modal-title">Create New Test</h3>
+                <button onclick="closeTestModal()" class="text-gray-500 hover:text-mindful-midnight text-2xl">&times;</button>
+            </div>
+            <form id="test-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Test Name</label>
+                    <input type="text" id="test-name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-tenacious-turquoise focus:border-tenacious-turquoise" placeholder="e.g., Homepage Button Test">
+                </div>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-mindful-midnight mb-1">Start Date</label>
+                        <input type="date" id="test-start-date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-tenacious-turquoise focus:border-tenacious-turquoise">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-mindful-midnight mb-1">Expected End Date</label>
+                        <input type="date" id="test-end-date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-tenacious-turquoise focus:border-tenacious-turquoise">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Tester Name</label>
+                    <input type="text" id="test-tester" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-tenacious-turquoise focus:border-tenacious-turquoise" placeholder="Your name">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Status</label>
+                    <select id="test-status" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-tenacious-turquoise focus:border-tenacious-turquoise">
+                        <option value="planned">Planned</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Test Notes</label>
+                    <textarea id="test-notes" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-tenacious-turquoise focus:border-tenacious-turquoise" rows="4" placeholder="Detailed notes about the test execution"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Screenshots</label>
+                    <input type="file" id="test-screenshots" multiple accept="image/*" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-tenacious-turquoise focus:border-tenacious-turquoise">
+                    <p class="text-sm text-gray-500 mt-1">Upload multiple screenshots (optional)</p>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="bg-gradient-to-r from-tenacious-turquoise to-vitality-violet hover:from-vitality-violet hover:to-tenacious-turquoise text-white px-6 py-2 rounded-lg font-medium transition-all duration-200">
+                        Save Test
+                    </button>
+                    <button type="button" onclick="closeTestModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Complete Test Modal -->
+    <div id="complete-modal" class="modal fixed inset-0 bg-mindful-midnight/50 items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-mindful-midnight">Complete Test</h3>
+                <button onclick="closeCompleteModal()" class="text-gray-500 hover:text-mindful-midnight text-2xl">&times;</button>
+            </div>
+            <form id="complete-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">End Date</label>
+                    <input type="date" id="complete-end-date" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Test Result</label>
+                    <select id="complete-result" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple">
+                        <option value="passed">✅ Passed</option>
+                        <option value="failed">❌ Failed</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-mindful-midnight mb-1">Test Results & Summary</label>
+                    <textarea id="complete-results" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-potent-purple focus:border-potent-purple" rows="4" placeholder="Detailed results, findings, and summary of the test"></textarea>
+                </div>
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="bg-gradient-to-r from-potent-purple to-vitality-violet hover:from-darker-violet hover:to-potent-purple text-white px-6 py-2 rounded-lg font-medium transition-all duration-200">
+                        Complete Test
+                    </button>
+                    <button type="button" onclick="closeCompleteModal()" class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-6 py-2 rounded-lg font-medium transition-colors">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let editingIdea = null;
+        let editingTest = null;
+        let completingTest = null;
+
+        // Tab switching
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('text-potent-purple', 'border-b-2', 'border-potent-purple', 'bg-fearless-fuchsia/10');
+                btn.classList.add('text-gray-600');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Activate selected tab button
+            const activeBtn = document.querySelector(`[data-tab="${tabName}"]`);
+            activeBtn.classList.add('text-potent-purple', 'border-b-2', 'border-potent-purple', 'bg-fearless-fuchsia/10');
+            activeBtn.classList.remove('text-gray-600');
+        }
+
+        // Modal Functions
+        function openIdeaModal(ideaElement = null) {
+            editingIdea = ideaElement;
+            const modal = document.getElementById('idea-modal');
+            const title = document.getElementById('idea-modal-title');
+            
+            if (ideaElement) {
+                title.textContent = 'Edit Test Idea';
+                const ideaData = getIdeaData(ideaElement);
+                document.getElementById('idea-name').value = ideaData.name;
+                document.getElementById('idea-element').value = ideaData.element;
+                document.getElementById('idea-reasoning').value = ideaData.reasoning;
+                document.getElementById('idea-howto').value = ideaData.howto;
+                document.getElementById('idea-success').value = ideaData.success;
+            } else {
+                title.textContent = 'Add New Test Idea';
+                document.getElementById('idea-form').reset();
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeIdeaModal() {
+            document.getElementById('idea-modal').classList.remove('active');
+            editingIdea = null;
+        }
+
+        function openTestModal(testElement = null) {
+            editingTest = testElement;
+            const modal = document.getElementById('test-modal');
+            const title = document.getElementById('test-modal-title');
+            
+            if (testElement) {
+                title.textContent = 'Edit Test';
+                const testData = getTestData(testElement);
+                document.getElementById('test-name').value = testData.name;
+                document.getElementById('test-start-date').value = testData.startDate;
+                document.getElementById('test-end-date').value = testData.endDate;
+                document.getElementById('test-tester').value = testData.tester;
+                document.getElementById('test-status').value = testData.status;
+                document.getElementById('test-notes').value = testData.notes;
+            } else {
+                title.textContent = 'Create New Test';
+                document.getElementById('test-form').reset();
+            }
+            
+            modal.classList.add('active');
+        }
+
+        function closeTestModal() {
+            document.getElementById('test-modal').classList.remove('active');
+            editingTest = null;
+        }
+
+        function openCompleteModal(testElement) {
+            completingTest = testElement;
+            const modal = document.getElementById('complete-modal');
+            const testData = getTestData(testElement);
+            document.getElementById('complete-end-date').value = testData.endDate || new Date().toISOString().split('T')[0];
+            document.getElementById('complete-results').value = testData.results || '';
+            modal.classList.add('active');
+        }
+
+        function closeCompleteModal() {
+            document.getElementById('complete-modal').classList.remove('active');
+            completingTest = null;
+        }
+
+        // Idea functions
+        function getIdeaData(element) {
+            const container = element.closest('.bg-wellness-white');
+            return {
+                name: container.querySelector('h3').textContent,
+                element: container.querySelector('.grid > div:nth-child(1) p').textContent,
+                reasoning: container.querySelector('.grid > div:nth-child(2) p').textContent,
+                howto: container.querySelector('.grid > div:nth-child(3) p').textContent,
+                success: container.querySelector('.mt-2 p').textContent
+            };
+        }
+
+        function addIdea(idea) {
+            const ideasList = document.getElementById('ideas-list');
+            const ideaItem = document.createElement('div');
+            ideaItem.className = 'bg-wellness-white rounded-lg p-4 border-l-4 border-potent-purple shadow-sm';
+            ideaItem.innerHTML = `
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-semibold text-mindful-midnight">${idea.name}</h3>
+                    <div class="flex gap-2">
+                        <button onclick="editIdea(this)" class="text-potent-purple hover:text-darker-violet text-sm">✏️ Edit</button>
+                        <button onclick="createTestFromIdea(this)" class="text-black hover:text-vitality-violet text-sm">🧪 Create Test</button>
+                        <button onclick="deleteIdea(this)" class="text-red-600 hover:text-red-800 text-sm">🗑️ Delete</button>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Element:</span>
+                        <p class="text-gray-700">${idea.element}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Reasoning:</span>
+                        <p class="text-gray-700">${idea.reasoning}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-mindful-midnight">How to Test:</span>
+                        <p class="text-gray-700">${idea.howto}</p>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <span class="font-medium text-mindful-midnight text-sm">Success Criteria:</span>
+                    <p class="text-gray-700 text-sm">${idea.success}</p>
+                </div>
+            `;
+            ideasList.prepend(ideaItem);
+        }
+
+        function editIdea(button) {
+            openIdeaModal(button.closest('.bg-wellness-white'));
+        }
+
+        function deleteIdea(button) {
+            const ideaItem = button.closest('.bg-wellness-white');
+            ideaItem.remove();
+        }
+
+        function createTestFromIdea(button) {
+            const ideaData = getIdeaData(button.closest('.bg-wellness-white'));
+            openTestModal();
+            document.getElementById('test-name').value = ideaData.name;
+            document.getElementById('test-notes').value = `Created from idea: ${ideaData.reasoning}`;
+        }
+
+        // Test functions
+        function getTestData(element) {
+            const container = element.closest('.bg-white');
+            return {
+                name: container.querySelector('h3').textContent,
+                startDate: container.querySelector('.grid > div:nth-child(1) p').textContent,
+                endDate: container.querySelector('.grid > div:nth-child(2) p').textContent,
+                tester: container.querySelector('.grid > div:nth-child(3) p').textContent,
+                status: container.querySelector('.inline-block.bg-yellow-100') ? 'in-progress' : (container.querySelector('.inline-block.bg-green-100') ? 'completed' : 'planned'),
+                notes: container.querySelector('.mb-4 p').textContent
+            };
+        }
+
+        function addTest(test) {
+            const testsList = document.getElementById('tests-list');
+            const testItem = document.createElement('div');
+            testItem.className = 'bg-white rounded-lg p-6 border shadow-sm border-l-4 border-vitality-violet';
+            testItem.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h3 class="font-semibold text-mindful-midnight text-lg">${test.name}</h3>
+                        <span class="inline-block bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-sm font-medium">In Progress</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="editTest(this)" class="text-potent-purple hover:text-darker-violet text-sm">✏️ Edit</button>
+                        <button onclick="completeTest(this)" class="text-tenacious-turquoise hover:text-vitality-violet text-sm">✅ Complete</button>
+                        <button onclick="deleteTest(this)" class="text-red-600 hover:text-red-800 text-sm">🗑️ Delete</button>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Start Date:</span>
+                        <p class="text-gray-700">${test.startDate}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Expected End:</span>
+                        <p class="text-gray-700">${test.endDate}</p>
+                    </div>
+                    <div>
+                        <span class="font-medium text-mindful-midnight">Tester:</span>
+                        <p class="text-gray-700">${test.tester}</p>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <span class="font-medium text-mindful-midnight">Notes:</span>
+                    <p class="text-gray-700">${test.notes}</p>
+                </div>
+                <div class="bg-wellness-white p-3 rounded">
+                    <span class="font-medium text-mindful-midnight text-sm">Screenshots:</span>
+                    <div class="mt-2 flex gap-2">
+                        <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">
+                            📱 Mobile
+                        </div>
+                        <div class="bg-fearless-fuchsia/20 w-20 h-16 rounded flex items-center justify-center text-xs text-mindful-midnight">
+                            💻 Desktop
+                        </div>
+                    </div>
+                </div>
+            `;
+            testsList.prepend(testItem);
+        }
+
+        function editTest(button) {
+            openTestModal(button.closest('.bg-white'));
+        }
+
+        function deleteTest(button) {
+            const testItem = button.closest('.bg-white');
+            testItem.remove();
+        }
+
+        function completeTest(button) {
+            openCompleteModal(button.closest('.bg-white'));
+        }
+
+        function viewTestResults(button) {
+            const testItem = button.closest('.bg-white');
+            alert('Displaying test results for: ' + testItem.querySelector('h3').textContent);
+        }
+
+        // Form handlers
+        document.getElementById('idea-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const idea = {
+                name: document.getElementById('idea-name').value,
+                element: document.getElementById('idea-element').value,
+                reasoning: document.getElementById('idea-reasoning').value,
+                howto: document.getElementById('idea-howto').value,
+                success: document.getElementById('idea-success').value,
+            };
+
+            if (editingIdea) {
+                const container = editingIdea.closest('.bg-wellness-white');
+                container.querySelector('h3').textContent = idea.name;
+                container.querySelector('.grid > div:nth-child(1) p').textContent = idea.element;
+                container.querySelector('.grid > div:nth-child(2) p').textContent = idea.reasoning;
+                container.querySelector('.grid > div:nth-child(3) p').textContent = idea.howto;
+                container.querySelector('.mt-2 p').textContent = idea.success;
+            } else {
+                addIdea(idea);
+            }
+
+            closeIdeaModal();
+        });
+
+        document.getElementById('test-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const test = {
+                name: document.getElementById('test-name').value,
+                startDate: document.getElementById('test-start-date').value,
+                endDate: document.getElementById('test-end-date').value,
+                tester: document.getElementById('test-tester').value,
+                status: document.getElementById('test-status').value,
+                notes: document.getElementById('test-notes').value
+            };
+
+            if (editingTest) {
+                const container = editingTest.closest('.bg-white');
+                container.querySelector('h3').textContent = test.name;
+                container.querySelector('.grid > div:nth-child(1) p').textContent = test.startDate;
+                container.querySelector('.grid > div:nth-child(2) p').textContent = test.endDate;
+                container.querySelector('.grid > div:nth-child(3) p').textContent = test.tester;
+                container.querySelector('.mb-4 p').textContent = test.notes;
+            } else {
+                addTest(test);
+            }
+
+            closeTestModal();
+        });
+
+        document.getElementById('complete-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const result = document.getElementById('complete-result').value;
+            const endDate = document.getElementById('complete-end-date').value;
+            const resultsText = document.getElementById('complete-results').value;
+
+            if (completingTest) {
+                const container = completingTest.closest('.bg-white');
+                const statusContainer = container.querySelector('.inline-block.bg-yellow-100');
+                if (statusContainer) statusContainer.remove();
+
+                const statusSpan = document.createElement('span');
+                statusSpan.className = result === 'passed' ? 'inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-sm font-medium' : 'inline-block bg-red-100 text-red-800 px-2 py-1 rounded text-sm font-medium';
+                statusSpan.textContent = result === 'passed' ? '✅ Passed' : '❌ Failed';
+                container.querySelector('.flex.gap-2').before(statusSpan);
+
+                container.querySelector('.grid > div:nth-child(2) p').textContent = endDate;
+
+                const resultsDiv = document.createElement('div');
+                resultsDiv.className = 'mb-4';
+                resultsDiv.innerHTML = `
+                    <span class="font-medium text-mindful-midnight">Test Results:</span>
+                    <p class="text-gray-700">${resultsText}</p>
+                `;
+                const existingResults = container.querySelector('.mb-4:last-child');
+                if (existingResults) {
+                    existingResults.replaceWith(resultsDiv);
+                } else {
+                    container.appendChild(resultsDiv);
+                }
+            }
+
+            closeCompleteModal();
+        });
+    </script>
+</body>
+</html>
