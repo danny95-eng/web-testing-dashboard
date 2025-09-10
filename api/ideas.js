@@ -27,6 +27,7 @@ async function getIdeas(sheet) {
     id: row.get('ID'),
     title: row.get('Title'),
     description: row.get('Description'),
+    screenshots: row.get('Screenshots') || '',
     submittedBy: row.get('Submitted By'),
     status: row.get('Status'),
     timestamp: row.get('Timestamp'),
@@ -72,8 +73,8 @@ module.exports = async (req, res) => {
         body = JSON.parse(body);
       }
 
-      const { title, description, submittedBy } = body || {};
-      console.log('POST data:', { title, description, submittedBy });
+      const { title, description, submittedBy, screenshots } = body || {};
+      console.log('POST data:', { title, description, submittedBy, screenshots: screenshots ? 'present' : 'none' });
       if (!title || !description) {
         res.statusCode = 400;
         res.end(JSON.stringify({ error: 'Title and Description are required.' }));
@@ -84,6 +85,7 @@ module.exports = async (req, res) => {
         ID: `IDEA-${Date.now()}`,
         Title: title,
         Description: description,
+        Screenshots: screenshots || '',
         'Submitted By': submittedBy || 'Anonymous',
         Status: 'Pending',
         Timestamp: new Date().toISOString(),

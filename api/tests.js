@@ -39,8 +39,8 @@ module.exports = async (req, res) => {
     const url = new URL(req.url, 'http://localhost');
     const status = url.searchParams.get('status') || 'active';
 
-    const ACTIVE_HEADERS = ['ID','Name','Start Date','Expected End Date','Tester','Status','Notes','Timestamp'];
-    const COMPLETED_HEADERS = ['ID','Name','Start Date','End Date','Tester','Result','Results','Timestamp'];
+    const ACTIVE_HEADERS = ['ID','Name','Start Date','Expected End Date','Tester','Status','Notes','Screenshots','Timestamp'];
+    const COMPLETED_HEADERS = ['ID','Name','Start Date','End Date','Tester','Result','Results','Screenshots','Timestamp'];
 
     if (req.method === 'GET') {
       if (status === 'completed') {
@@ -70,7 +70,7 @@ module.exports = async (req, res) => {
         body = JSON.parse(body);
       }
 
-      const { name, startDate, expectedEndDate, tester, status: st, notes } = body || {};
+      const { name, startDate, expectedEndDate, tester, status: st, notes, screenshots } = body || {};
       if (!name) {
         res.statusCode = 400; res.setHeader('Content-Type','application/json');
         res.end(JSON.stringify({ error: 'Name is required.' }));
@@ -86,6 +86,7 @@ module.exports = async (req, res) => {
         Tester: tester || '',
         Status: st || 'In Progress',
         Notes: notes || '',
+        Screenshots: screenshots || '',
         Timestamp: new Date().toISOString()
       });
       res.statusCode = 201; res.setHeader('Content-Type','application/json');

@@ -41,11 +41,11 @@ module.exports = async (req, res) => {
       body = JSON.parse(body);
     }
 
-    const { id, name, startDate, endDate, tester, result, results } = body || {};
+    const { id, name, startDate, endDate, tester, result, results, screenshots } = body || {};
     if (!name) { res.statusCode = 400; res.end(JSON.stringify({ error: 'name is required' })); return; }
 
     const doc = getDoc();
-    const headers = ['ID','Name','Start Date','End Date','Tester','Result','Results','Timestamp'];
+    const headers = ['ID','Name','Start Date','End Date','Tester','Result','Results','Screenshots','Timestamp'];
     const sheet = await ensureSheetWithHeaders(doc, 'Completed Tests', headers);
     await sheet.addRow({
       ID: id || `TEST-${Date.now()}`,
@@ -55,6 +55,7 @@ module.exports = async (req, res) => {
       Tester: tester || '',
       Result: result || '',
       Results: results || '',
+      Screenshots: screenshots || '',
       Timestamp: new Date().toISOString(),
     });
 

@@ -246,7 +246,6 @@ console.log('[Dashboard] main.js loaded');
       reasoning: '',
       howto: '',
       success: '',
-      screenshots: []
     };
 
     lines.forEach(line => {
@@ -258,12 +257,6 @@ console.log('[Dashboard] main.js loaded');
         result.howto = line.substring('How to Test: '.length).trim();
       } else if (line.startsWith('Success Criteria: ')) {
         result.success = line.substring('Success Criteria: '.length).trim();
-      } else if (line.startsWith('Screenshots: ')) {
-        const screenshotNames = line.substring('Screenshots: '.length).trim();
-        if (screenshotNames) {
-          // For now, we'll just store the names since we don't have the actual image data
-          result.screenshots = screenshotNames.split(', ').map(name => ({ name, data: '' }));
-        }
       }
     });
 
@@ -291,12 +284,21 @@ console.log('[Dashboard] main.js loaded');
       if (ideasList) ideasList.innerHTML = '';
       for (const row of rows.filter(r => r.title && r.title.trim())){
         const parsed = parseIdeaDescription(row.description);
+        let screenshots = [];
+        if (row.screenshots) {
+          try {
+            screenshots = JSON.parse(row.screenshots);
+          } catch (e) {
+            console.warn('Failed to parse screenshots for idea:', row.title, e);
+          }
+        }
         const idea = {
           name: row.title || 'Untitled',
           element: parsed.element,
           reasoning: parsed.reasoning,
           howto: parsed.howto,
           success: parsed.success,
+          screenshots: screenshots,
         };
         addIdea(idea);
       }
@@ -331,12 +333,21 @@ console.log('[Dashboard] main.js loaded');
       }
       if (testsList) testsList.innerHTML = '';
       for (const row of rows.filter(r => r['Name'] && r['Name'].trim())){
+        let screenshots = [];
+        if (row['Screenshots']) {
+          try {
+            screenshots = JSON.parse(row['Screenshots']);
+          } catch (e) {
+            console.warn('Failed to parse screenshots for test:', row['Name'], e);
+          }
+        }
         const test = {
           name: row['Name'] || 'Untitled Test',
           startDate: row['Start Date'] || '',
           endDate: row['Expected End Date'] || '',
           tester: row['Tester'] || '',
           notes: row['Notes'] || '',
+          screenshots: screenshots,
         };
         addTest(test);
       }
@@ -414,6 +425,14 @@ console.log('[Dashboard] main.js loaded');
       }
       if (completedList) completedList.innerHTML = '';
       for (const row of rows.filter(r => r['Name'] && r['Name'].trim())){
+        let screenshots = [];
+        if (row['Screenshots']) {
+          try {
+            screenshots = JSON.parse(row['Screenshots']);
+          } catch (e) {
+            console.warn('Failed to parse screenshots for completed test:', row['Name'], e);
+          }
+        }
         const test = {
           name: row['Name'] || 'Untitled Test',
           startDate: row['Start Date'] || '',
@@ -421,6 +440,7 @@ console.log('[Dashboard] main.js loaded');
           tester: row['Tester'] || '',
           result: row['Result'] || 'Completed',
           results: row['Results'] || '',
+          screenshots: screenshots,
         };
         addCompletedTestCard(test);
       }
@@ -455,8 +475,8 @@ console.log('[Dashboard] main.js loaded');
       idea.reasoning && `Reasoning: ${idea.reasoning}`,
       idea.howto && `How to Test: ${idea.howto}`,
       idea.success && `Success Criteria: ${idea.success}`,
-      idea.screenshots.length && `Screenshots: ${idea.screenshots.map(s => s.name).join(', ')}`,
     ].filter(Boolean).join('\n');
+    const screenshotsJson = idea.screenshots.length ? JSON.stringify(idea.screenshots) : '';
     try {
       const resp = await fetch('/api/ideas', {
         method: 'POST',
@@ -464,6 +484,7 @@ console.log('[Dashboard] main.js loaded');
         body: JSON.stringify({
           title: idea.name,
           description,
+          screenshots: screenshotsJson,
           submittedBy: idea.submitter || undefined,
         }),
       });
@@ -512,7 +533,8 @@ console.log('[Dashboard] main.js loaded');
           expectedEndDate: test.endDate,
           tester: test.tester,
           status: test.status,
-          notes: test.notes + (test.screenshots.length ? `\nScreenshots: ${test.screenshots.map(s => s.name).join(', ')}` : ''),
+          notes: test.notes,
+          screenshots: test.screenshots.length ? JSON.stringify(test.screenshots) : '',
         }),
       });
       if (!resp.ok){
