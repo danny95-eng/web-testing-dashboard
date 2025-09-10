@@ -526,10 +526,12 @@ console.log('[Dashboard] main.js loaded');
     closeCompleteModal();
   });
 
-  // Initial load
-  refreshIdeasList();
-  refreshActiveTests();
-  refreshCompletedTests();
+  // Initial load - wait for DOM
+  document.addEventListener('DOMContentLoaded', () => {
+    refreshIdeasList();
+    refreshActiveTests();
+    refreshCompletedTests();
+  });
 
   // Make functions available to inline onclick attributes
   Object.assign(window, {
