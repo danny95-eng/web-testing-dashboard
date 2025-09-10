@@ -691,5 +691,6 @@ console.log('[Dashboard] main.js loaded');
     completeTest,
     viewTestResults,
     enlargeImage,
+    readFilesAsDataURLs,
   });
 })();
