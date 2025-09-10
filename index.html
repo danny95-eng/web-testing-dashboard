@@ -459,11 +459,11 @@
             return out;
         }
 
-        async function refreshIdeasList() {
+    async function refreshIdeasList() {
             const ideasList = document.getElementById('ideas-list');
             ideasList.innerHTML = '';
             try {
-                const resp = await fetch('/api/ideas');
+                const resp = await fetch('/api/ideas', { cache: 'no-store', headers: { 'Accept': 'application/json' } });
                 if (!resp.ok) throw new Error('Failed to fetch ideas');
                 const rows = await resp.json();
                 if (!Array.isArray(rows) || rows.length === 0) {
@@ -634,11 +634,11 @@
             alert('Displaying test results for: ' + testItem.querySelector('h3').textContent);
         }
 
-        async function refreshActiveTests() {
+    async function refreshActiveTests() {
             const testsList = document.getElementById('tests-list');
             testsList.innerHTML = '';
             try {
-                const resp = await fetch('/api/tests');
+                const resp = await fetch('/api/tests', { cache: 'no-store', headers: { 'Accept': 'application/json' } });
                 if (!resp.ok) throw new Error('Failed to fetch active tests');
                 const rows = await resp.json();
                 if (!Array.isArray(rows) || rows.length === 0) {
@@ -711,11 +711,11 @@
             list.appendChild(item);
         }
 
-        async function refreshCompletedTests() {
+    async function refreshCompletedTests() {
             const completedList = document.getElementById('completed-list');
             completedList.innerHTML = '';
             try {
-                const resp = await fetch('/api/tests?status=completed');
+                const resp = await fetch('/api/tests?status=completed', { cache: 'no-store', headers: { 'Accept': 'application/json' } });
                 if (!resp.ok) throw new Error('Failed to fetch completed tests');
                 const rows = await resp.json();
                 if (!Array.isArray(rows) || rows.length === 0) {
