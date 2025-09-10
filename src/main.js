@@ -258,7 +258,7 @@ console.log('[Dashboard] main.js loaded');
         return;
       }
       if (ideasList) ideasList.innerHTML = '';
-      for (const row of rows){
+      for (const row of rows.filter(r => r.title && r.title.trim())){
         const parsed = parseIdeaDescription(row.description);
         const idea = {
           name: row.title || 'Untitled',
@@ -299,7 +299,7 @@ console.log('[Dashboard] main.js loaded');
         return;
       }
       if (testsList) testsList.innerHTML = '';
-      for (const row of rows){
+      for (const row of rows.filter(r => r['Name'] && r['Name'].trim())){
         const test = {
           name: row['Name'] || 'Untitled Test',
           startDate: row['Start Date'] || '',
@@ -382,7 +382,7 @@ console.log('[Dashboard] main.js loaded');
         return;
       }
       if (completedList) completedList.innerHTML = '';
-      for (const row of rows){
+      for (const row of rows.filter(r => r['Name'] && r['Name'].trim())){
         const test = {
           name: row['Name'] || 'Untitled Test',
           startDate: row['Start Date'] || '',
