@@ -34,9 +34,10 @@
         <!-- Header -->
         <div class="bg-white rounded-xl shadow-lg p-6 mb-8 border-l-4 border-potent-purple">
             <div class="flex items-center gap-4 mb-4">
-                <div class="w-12 h-12 bg-gradient-to-br from-potent-purple to-vitality-violet rounded-lg flex items-center justify-center">
-                    <span class="text-white text-xl font-bold">🧪</span>
-                </div>
+                <!-- Logo Container -->
+<div class="w-40 h-40 bg-white rounded-lg flex items-center justify-center p-1 shadow-inner">
+    <img src="assets\CheqUp_Social-DP_Dark_RGB.png" alt="CheqUp Company Logo" class="h-full w-full object-contain">
+</div>
                 <div>
                     <h1 class="text-3xl font-bold text-mindful-midnight mb-1">Web Testing Dashboard</h1>
                     <p class="text-gray-600">Manage test ideas, create tests, and track your website testing progress</p>
@@ -74,7 +75,7 @@
                             <h3 class="font-semibold text-mindful-midnight">Navigation Menu Responsiveness</h3>
                             <div class="flex gap-2">
                                 <button onclick="editIdea(this)" class="text-potent-purple hover:text-darker-violet text-sm">✏️ Edit</button>
-                                <button onclick="createTestFromIdea(this)" class="text-tenacious-turquoise hover:text-vitality-violet text-sm">🧪 Create Test</button>
+                                <button onclick="createTestFromIdea(this)" class="text-black hover:text-vitality-violet text-sm">🧪 Create Test</button>
                                 <button onclick="deleteIdea(this)" class="text-red-600 hover:text-red-800 text-sm">🗑️ Delete</button>
                             </div>
                         </div>
@@ -720,5 +721,96 @@
             }
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97cdcd17155903b9',t:'MTc1NzQ5NTUyMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const ideaForm = document.getElementById('ideaForm');
+        const ideaList = document.getElementById('ideaList');
+
+        // --- Function to fetch and display ideas ---
+        async function fetchAndDisplayIdeas() {
+            try {
+                const response = await fetch('/api/ideas'); // Fetch from our backend
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const ideas = await response.json();
+
+                // Clear the current list
+                ideaList.innerHTML = ''; 
+
+                // Check if there are any ideas
+                if (ideas.length === 0) {
+                    ideaList.innerHTML = '<p class="text-gray-500">No ideas submitted yet. Be the first!</p>';
+                    return;
+                }
+
+                // Add each idea to the list
+                ideas.forEach(idea => {
+                    const ideaElement = document.createElement('div');
+                    ideaElement.className = 'bg-white p-4 rounded-lg shadow-md';
+                    ideaElement.innerHTML = `
+                        <h3 class="font-bold text-lg">${idea.title}</h3>
+                        <p class="text-gray-600">${idea.description}</p>
+                        <div class="text-sm text-gray-400 mt-2">Submitted by: ${idea.submittedBy}</div>
+                    `;
+                    ideaList.appendChild(ideaElement);
+                });
+            } catch (error) {
+                console.error('Failed to fetch ideas:', error);
+                ideaList.innerHTML = '<p class="text-red-500">Error: Could not load ideas from the server.</p>';
+            }
+        }
+
+        // --- Event Listener for the form submission ---
+        ideaForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent the page from reloading
+
+            const title = document.getElementById('ideaTitle').value;
+            const description = document.getElementById('ideaDescription').value;
+            const submitButton = ideaForm.querySelector('button[type="submit"]');
+
+            // Simple validation
+            if (!title.trim() || !description.trim()) {
+                alert('Please fill out both the title and description.');
+                return;
+            }
+            
+            submitButton.disabled = true;
+            submitButton.textContent = 'Submitting...';
+
+            try {
+                const response = await fetch('/api/ideas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description,
+                        submittedBy: 'Team Member' // You can make this dynamic later
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error('Server responded with an error.');
+                }
+
+                // Clear the form and refresh the list
+                ideaForm.reset();
+                fetchAndDisplayIdeas(); // Reload the list to show the new idea
+
+            } catch (error) {
+                console.error('Failed to submit idea:', error);
+                alert('There was an error submitting your idea. Please try again.');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Submit Idea';
+            }
+        });
+
+        // --- Initial Load ---
+        fetchAndDisplayIdeas();
+    });
+</script>
+</body>
 </html>
