@@ -81,6 +81,7 @@ console.log('[Dashboard] main.js loaded - v1.1');
   }
 
   function openCompleteModal(testElement){
+    console.log('[Dashboard] Opening complete modal for test:', testElement);
     completingTest = testElement;
     const modal = document.getElementById('complete-modal');
     const testData = getTestData(testElement);
@@ -598,8 +599,17 @@ console.log('[Dashboard] main.js loaded - v1.1');
     const screenshots = screenshotsInput?.files || [];
     let screenshotData = await readFilesAsDataURLs(screenshots);
     console.log('[Dashboard] Uploaded files count:', screenshots.length, 'Processed data count:', screenshotData.length);
-    if (screenshotData.length === 0 && window.pendingIdeaScreenshots && editingIdea) {
-      screenshotData = window.pendingIdeaScreenshots;
+    
+    // When editing, merge new screenshots with existing ones instead of replacing
+    if (editingIdea && window.pendingIdeaScreenshots) {
+      if (screenshotData.length > 0) {
+        // Append new screenshots to existing ones
+        screenshotData = [...window.pendingIdeaScreenshots, ...screenshotData];
+        console.log('[Dashboard] Merged existing + new screenshots:', window.pendingIdeaScreenshots.length, '+', screenshots.length, '=', screenshotData.length);
+      } else {
+        // No new screenshots, keep existing ones
+        screenshotData = window.pendingIdeaScreenshots;
+      }
     }
     const idea = {
       name: document.getElementById('idea-name')?.value.trim(),
@@ -787,13 +797,25 @@ console.log('[Dashboard] main.js loaded - v1.1');
           screenshots: screenshotsJson,
         };
         console.log('[Dashboard] Completing test. Payload:', payload); // DEBUG
-        await fetch('/api/complete-test', {
+        const response = await fetch('/api/complete-test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        
+        if (response.ok) {
+          console.log('[Dashboard] Test completion recorded successfully');
+          // Remove the test from the active tests display
+          container.remove();
+          // Refresh the completed tests to show the newly completed test
+          refreshCompletedTests();
+        } else {
+          console.error('[Dashboard] Failed to record test completion');
+          alert('Failed to record test completion. Please try again.');
+        }
       } catch (err){
         console.error('Record completion failed:', err);
+        alert('Failed to record test completion. Please try again.');
       }
     }
     closeCompleteModal();
