@@ -119,6 +119,14 @@ console.log('[Dashboard] main.js loaded - v1.1');
   }
   function getTestData(element){
     const container = element.closest('.bg-white');
+    const screenshots = [];
+    const screenshotElements = container?.querySelectorAll('.bg-wellness-white .flex.gap-2 img');
+    screenshotElements?.forEach(img => {
+      screenshots.push({
+        name: img.alt || 'Screenshot',
+        data: img.src
+      });
+    });
     return {
       name: container?.querySelector('h3')?.textContent?.trim() || '',
       startDate: container?.querySelector('.grid > div:nth-child(1) p')?.textContent?.trim() || '',
@@ -126,7 +134,8 @@ console.log('[Dashboard] main.js loaded - v1.1');
       tester: container?.querySelector('.grid > div:nth-child(3) p')?.textContent?.trim() || '',
       status: container?.querySelector('.inline-block.bg-yellow-100') ? 'in-progress' : (container?.querySelector('.inline-block.bg-green-100') ? 'completed' : 'planned'),
       notes: container?.querySelector('.mb-4 p')?.textContent?.trim() || '',
-      results: container?.querySelector('.mb-4 p')?.textContent?.trim() || ''
+      results: container?.querySelector('.mb-4 p')?.textContent?.trim() || '',
+      screenshots: screenshots
     };
   }
 
@@ -695,9 +704,22 @@ console.log('[Dashboard] main.js loaded - v1.1');
     const screenshotsInput = document.getElementById('test-screenshots');
     const screenshots = screenshotsInput?.files || [];
     let screenshotData = await readFilesAsDataURLs(screenshots);
+    console.log('[Dashboard] Test form - uploaded files count:', screenshots.length, 'Processed data count:', screenshotData.length);
     
-    // If no new screenshots were uploaded but we have pending screenshots from an idea, use those
-    if (screenshotData.length === 0 && window.pendingScreenshots) {
+    // Handle screenshot merging for editing vs creation
+    if (editingTest) {
+      // When editing, get existing screenshots and merge with new ones
+      const existingScreenshots = getTestData(editingTest).screenshots || [];
+      if (screenshotData.length > 0) {
+        // Append new screenshots to existing ones
+        screenshotData = [...existingScreenshots, ...screenshotData];
+        console.log('[Dashboard] Test edit - merged existing + new screenshots:', existingScreenshots.length, '+', screenshots.length, '=', screenshotData.length);
+      } else {
+        // No new screenshots, keep existing ones
+        screenshotData = existingScreenshots;
+      }
+    } else if (screenshotData.length === 0 && window.pendingScreenshots) {
+      // If no new screenshots were uploaded but we have pending screenshots from an idea, use those
       screenshotData = window.pendingScreenshots;
     }
     
@@ -712,6 +734,10 @@ console.log('[Dashboard] main.js loaded - v1.1');
     };
     try {
       const screenshotsJsonForTest = test.screenshots.length ? await fitScreenshotsForSheet(test.screenshots) : '';
+      
+      // Determine if we're editing or creating
+      const isEditing = !!editingTest;
+      const method = isEditing ? 'PUT' : 'POST';
       const payload = {
         name: test.name,
         startDate: test.startDate,
@@ -721,9 +747,17 @@ console.log('[Dashboard] main.js loaded - v1.1');
         notes: test.notes,
         screenshots: screenshotsJsonForTest,
       };
-      console.log('[Dashboard] Saving test. Payload:', payload); // DEBUG
+      
+      // Add ID for editing
+      if (isEditing) {
+        // We need to store and retrieve the test ID - for now let's generate one from the name and timestamp
+        // This is a temporary solution - ideally we'd store IDs in the DOM like we do for ideas
+        payload.id = `TEST-${test.name.replace(/\s+/g, '-')}-${Date.now()}`;
+      }
+      
+      console.log('[Dashboard] Saving test. Method:', method, 'Payload:', payload); // DEBUG
       const resp = await fetch('/api/tests', {
-        method: 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
@@ -738,6 +772,20 @@ console.log('[Dashboard] main.js loaded - v1.1');
         container.querySelector('.grid > div:nth-child(2) p').textContent = test.endDate;
         container.querySelector('.grid > div:nth-child(3) p').textContent = test.tester;
         container.querySelector('.mb-4 p').textContent = test.notes;
+        
+        // Update screenshots section
+        const screenshotsContainer = container.querySelector('.bg-wellness-white .flex.gap-2');
+        if (screenshotsContainer && test.screenshots.length) {
+          screenshotsContainer.innerHTML = '';
+          test.screenshots.forEach(s => {
+            const img = document.createElement('img');
+            img.src = s.data; 
+            img.alt = s.name; 
+            img.className = 'w-20 h-16 object-cover rounded cursor-pointer hover:opacity-80';
+            img.onclick = () => enlargeImage(s.data, s.name);
+            screenshotsContainer.appendChild(img);
+          });
+        }
       } else {
         addTest(test);
       }

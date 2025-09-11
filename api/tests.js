@@ -108,7 +108,56 @@ module.exports = async (req, res) => {
       return;
     }
 
-    res.statusCode = 405; res.setHeader('Allow','GET, POST'); res.end('Method Not Allowed');
+    if (req.method === 'PUT') {
+      let body = req.body;
+      if (!body || (typeof body === 'string' && body.trim() === '')) {
+        const buffers = [];
+        await new Promise((resolve) => { req.on('data', c => buffers.push(c)); req.on('end', resolve); });
+        const raw = Buffer.concat(buffers).toString();
+        body = raw ? JSON.parse(raw) : {};
+      } else if (typeof body === 'string') {
+        body = JSON.parse(body);
+      }
+
+      const { id, name, startDate, expectedEndDate, tester, status: st, notes, screenshots } = body || {};
+      console.log('[API /api/tests PUT] Full body:', JSON.stringify(body, null, 2)); // DEBUG
+      if (!id || !name) {
+        res.statusCode = 400; res.setHeader('Content-Type','application/json');
+        res.end(JSON.stringify({ error: 'ID and Name are required for updates.' }));
+        return;
+      }
+
+      // Check if screenshots data is too large for Google Sheets
+      let processedScreenshots = screenshots || '';
+      if (processedScreenshots && processedScreenshots.length > 40000) {
+        console.warn('Screenshots data too large for Google Sheets, truncating...');
+        processedScreenshots = processedScreenshots.substring(0, 40000) + '...[truncated]';
+      }
+
+      const sheet = await ensureSheetWithHeaders(doc, 'Active Tests', ACTIVE_HEADERS);
+      const rows = await sheet.getRows();
+      const row = rows.find(r => r.get('ID') === id);
+      if (!row) {
+        res.statusCode = 404; res.setHeader('Content-Type','application/json');
+        res.end(JSON.stringify({ error: 'Test not found.' }));
+        return;
+      }
+
+      if (name !== undefined) row['Name'] = name;
+      if (startDate !== undefined) row['Start Date'] = startDate;
+      if (expectedEndDate !== undefined) row['Expected End Date'] = expectedEndDate;
+      if (tester !== undefined) row['Tester'] = tester;
+      if (st !== undefined) row['Status'] = st;
+      if (notes !== undefined) row['Notes'] = notes;
+      if (processedScreenshots !== undefined) row['Screenshots'] = processedScreenshots;
+      await row.save();
+
+      res.statusCode = 200; res.setHeader('Content-Type','application/json');
+      res.end(JSON.stringify({ message: 'Test updated successfully!' }));
+      return;
+    }
+
+    res.statusCode = 405; res.setHeader('Allow','GET, POST, PUT'); res.end('Method Not Allowed');
   } catch (err) {
     console.error('API /api/tests error:', err);
     res.statusCode = 500;
