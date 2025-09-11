@@ -73,8 +73,8 @@ module.exports = async (req, res) => {
         body = JSON.parse(body);
       }
 
-      const { title, description, submittedBy, screenshots } = body || {};
-      console.log('POST data received:', { title, description: description ? 'present' : 'none', submittedBy, screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
+  const { title, description, submittedBy, screenshots } = body || {};
+  console.log('POST data received:', { title, description: description ? 'present' : 'none', submittedBy, screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
       if (!title || !description) {
         res.statusCode = 400;
         res.end(JSON.stringify({ error: 'Title and Description are required.' }));
@@ -88,7 +88,7 @@ module.exports = async (req, res) => {
         processedScreenshots = processedScreenshots.substring(0, 40000) + '...[truncated]';
       }
 
-      await sheet.addRow({
+  await sheet.addRow({
         ID: `IDEA-${Date.now()}`,
         Title: title,
         Description: description,
@@ -102,6 +102,55 @@ module.exports = async (req, res) => {
       res.statusCode = 201;
       res.setHeader('Content-Type', 'application/json');
       res.end(JSON.stringify({ message: 'Idea submitted successfully!' }));
+      return;
+    }
+
+    if (req.method === 'PUT') {
+      // Read JSON body safely
+      let body = req.body;
+      if (!body || (typeof body === 'string' && body.trim() === '')) {
+        const buffers = [];
+        await new Promise((resolve) => {
+          req.on('data', (chunk) => buffers.push(chunk));
+          req.on('end', resolve);
+        });
+        const raw = Buffer.concat(buffers).toString();
+        body = raw ? JSON.parse(raw) : {};
+      } else if (typeof body === 'string') {
+        body = JSON.parse(body);
+      }
+
+      const { id, title, description, submittedBy, screenshots } = body || {};
+      console.log('PUT data received:', { id, title, description: description ? 'present' : 'none', submittedBy, screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
+      if (!id) {
+        res.statusCode = 400; res.setHeader('Content-Type','application/json');
+        res.end(JSON.stringify({ error: 'ID is required for updates.' }));
+        return;
+      }
+
+      // Truncate very large screenshots payloads
+      let processedScreenshots = screenshots || '';
+      if (processedScreenshots && processedScreenshots.length > 40000) {
+        console.warn('Screenshots data too large for Google Sheets, truncating on PUT...');
+        processedScreenshots = processedScreenshots.substring(0, 40000) + '...[truncated]';
+      }
+
+      const rows = await sheet.getRows();
+      const row = rows.find(r => r.get('ID') === id);
+      if (!row) {
+        res.statusCode = 404; res.setHeader('Content-Type','application/json');
+        res.end(JSON.stringify({ error: 'Idea not found.' }));
+        return;
+      }
+
+      if (title !== undefined) row['Title'] = title;
+      if (description !== undefined) row['Description'] = description;
+      if (submittedBy !== undefined) row['Submitted By'] = submittedBy;
+      if (processedScreenshots !== undefined) row['Screenshots'] = processedScreenshots;
+      await row.save();
+
+      res.statusCode = 200; res.setHeader('Content-Type','application/json');
+      res.end(JSON.stringify({ message: 'Idea updated successfully!' }));
       return;
     }
 

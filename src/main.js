@@ -130,9 +130,10 @@ console.log('[Dashboard] main.js loaded');
     const ideasList = document.getElementById('ideas-list');
     const ideaItem = document.createElement('div');
     ideaItem.className = 'bg-wellness-white rounded-lg p-4 border-l-4 border-potent-purple shadow-sm';
+    if (idea.id) ideaItem.dataset.id = idea.id;
     let screenshotsHtml = '';
     if (idea.screenshots && idea.screenshots.length) {
-      screenshotsHtml = '<div class="mt-2"><span class="font-medium text-mindful-midnight text-sm">Screenshots:</span><div class="flex gap-2 mt-1">';
+      screenshotsHtml = '<div class="mt-2 idea-screenshots"><span class="font-medium text-mindful-midnight text-sm">Screenshots:</span><div class="flex gap-2 mt-1">';
       idea.screenshots.forEach(s => {
         screenshotsHtml += `<img src="${s.data}" alt="${s.name}" class="w-20 h-16 object-cover rounded cursor-pointer hover:opacity-80" onclick="enlargeImage('${s.data}', '${s.name}')">`;
       });
@@ -165,7 +166,8 @@ console.log('[Dashboard] main.js loaded');
         <span class="font-medium text-mindful-midnight text-sm">Success Criteria:</span>
         <p class="text-gray-700 text-sm">${idea.success}</p>
       </div>${screenshotsHtml}`;
-    ideasList?.prepend(ideaItem);
+  ideasList?.prepend(ideaItem);
+  return ideaItem;
   }
   function editIdea(button){ openIdeaModal(button.closest('.bg-wellness-white')); }
   function deleteIdea(button){ button.closest('.bg-wellness-white')?.remove(); }
@@ -330,6 +332,7 @@ console.log('[Dashboard] main.js loaded');
           }
         }
         const idea = {
+          id: row.id,
           name: row.title || 'Untitled',
           element: parsed.element,
           reasoning: parsed.reasoning,
@@ -536,15 +539,24 @@ console.log('[Dashboard] main.js loaded');
     ].filter(Boolean).join('\n');
     const screenshotsJson = idea.screenshots.length ? JSON.stringify(idea.screenshots) : '';
     try {
-      const resp = await fetch('/api/ideas', {
-        method: 'POST',
+      // If editing, use PUT and include the idea ID from the DOM
+      const isEditing = !!editingIdea;
+      const endpoint = '/api/ideas';
+      const method = isEditing ? 'PUT' : 'POST';
+      const payload = {
+        title: idea.name,
+        description,
+        screenshots: screenshotsJson,
+        submittedBy: idea.submitter || undefined,
+      };
+      if (isEditing) {
+        const id = editingIdea.closest('.bg-wellness-white')?.dataset?.id;
+        if (id) payload.id = id;
+      }
+      const resp = await fetch(endpoint, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: idea.name,
-          description,
-          screenshots: screenshotsJson,
-          submittedBy: idea.submitter || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
       if (!resp.ok){
         const err = await resp.json().catch(() => ({}));
@@ -557,6 +569,24 @@ console.log('[Dashboard] main.js loaded');
         container.querySelector('.grid > div:nth-child(2) p').textContent = idea.reasoning;
         container.querySelector('.grid > div:nth-child(3) p').textContent = idea.howto;
         container.querySelector('.mt-2 p').textContent = idea.success;
+        // Update screenshots section
+        let shots = container.querySelector('.idea-screenshots .flex.gap-2');
+        if (!shots && idea.screenshots.length) {
+          const wrapper = document.createElement('div');
+          wrapper.className = 'mt-2 idea-screenshots';
+          wrapper.innerHTML = '<span class="font-medium text-mindful-midnight text-sm">Screenshots:</span><div class="flex gap-2 mt-1"></div>';
+          container.appendChild(wrapper);
+          shots = wrapper.querySelector('.flex.gap-2');
+        }
+        if (shots) {
+          shots.innerHTML = '';
+          idea.screenshots.forEach(s => {
+            const img = document.createElement('img');
+            img.src = s.data; img.alt = s.name; img.className = 'w-20 h-16 object-cover rounded cursor-pointer hover:opacity-80';
+            img.onclick = () => enlargeImage(s.data, s.name);
+            shots.appendChild(img);
+          });
+        }
       } else {
         addIdea(idea);
       }
