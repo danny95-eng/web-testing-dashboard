@@ -20,8 +20,10 @@ async function ensureSheetWithHeaders(doc, title, headers) {
   if (!sheet) throw new Error(`Sheet titled "${title}" not found`);
   await sheet.loadHeaderRow();
   const existing = sheet.headerValues || [];
-  // If no headers or missing required first header, set headers
-  if (!existing.length || !existing.includes('ID')) {
+  // If headers are missing or any required header is absent (like Screenshots), set the expected headers
+  const missingRequired = !existing.length || headers.some(h => !existing.includes(h));
+  if (missingRequired) {
+    console.warn(`[api/tests] Resetting header row for sheet "${title}" to ensure required columns exist.`);
     await sheet.setHeaderRow(headers);
   }
   return sheet;
@@ -72,6 +74,7 @@ module.exports = async (req, res) => {
 
       const { name, startDate, expectedEndDate, tester, status: st, notes, screenshots } = body || {};
       console.log('POST data received:', { name, startDate, expectedEndDate, tester, status: st, notes: notes ? 'present' : 'none', screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
+      console.log('[API /api/tests POST] Full body:', JSON.stringify(body, null, 2)); // DEBUG
       if (!name) {
         res.statusCode = 400; res.setHeader('Content-Type','application/json');
         res.end(JSON.stringify({ error: 'Name is required.' }));

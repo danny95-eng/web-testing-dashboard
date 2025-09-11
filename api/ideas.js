@@ -86,8 +86,9 @@ module.exports = async (req, res) => {
         body = JSON.parse(body);
       }
 
-  const { title, description, submittedBy, screenshots } = body || {};
-  console.log('POST data received:', { title, description: description ? 'present' : 'none', submittedBy, screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
+      const { title, description, submittedBy, screenshots } = body || {};
+      console.log('POST data received:', { title, description: description ? 'present' : 'none', submittedBy, screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
+      console.log('[API /api/ideas POST] Full body:', JSON.stringify(body, null, 2)); // DEBUG
       if (!title || !description) {
         res.statusCode = 400;
         res.end(JSON.stringify({ error: 'Title and Description are required.' }));
@@ -136,6 +137,7 @@ module.exports = async (req, res) => {
 
       const { id, title, description, submittedBy, screenshots } = body || {};
       console.log('PUT data received:', { id, title, description: description ? 'present' : 'none', submittedBy, screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
+      console.log('[API /api/ideas PUT] Full body:', JSON.stringify(body, null, 2)); // DEBUG
       if (!id) {
         res.statusCode = 400; res.setHeader('Content-Type','application/json');
         res.end(JSON.stringify({ error: 'ID is required for updates.' }));

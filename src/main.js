@@ -275,6 +275,55 @@ console.log('[Dashboard] main.js loaded');
     }));
   }
 
+  // Compress a dataURL image using canvas to fit within maxEdge and quality
+  function compressDataUrl(dataUrl, { maxEdge = 800, quality = 0.7 } = {}) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        const scale = Math.min(1, maxEdge / Math.max(width, height));
+        const w = Math.round(width * scale);
+        const h = Math.round(height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        // Use JPEG to shrink size; fallback to PNG if JPEG not supported
+        const out = canvas.toDataURL('image/jpeg', quality);
+        resolve(out);
+      };
+      img.onerror = () => resolve(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
+  // Fit screenshots to approximate Google Sheets cell limits by keeping one compressed image if needed
+  async function fitScreenshotsForSheet(screenshots) {
+    try {
+      const json = JSON.stringify(screenshots);
+      // Keep well under server 40k truncation threshold
+      const LIMIT = 39000;
+      if (json.length <= LIMIT) return json;
+      // Keep only first image and compress progressively
+      if (!screenshots.length) return '';
+      const first = screenshots[0];
+      const qualities = [0.7, 0.55, 0.4, 0.3, 0.2];
+      const edges = [800, 700, 600, 500, 400];
+    for (const maxEdge of edges) {
+        for (const q of qualities) {
+          const compressed = await compressDataUrl(first.data, { maxEdge, quality: q });
+          const candidate = JSON.stringify([{ name: first.name, data: compressed }]);
+      if (candidate.length <= LIMIT) return candidate;
+        }
+      }
+      // Could not fit; store a small marker instead
+      return '';
+    } catch (e) {
+      console.warn('Failed to fit screenshots for sheet:', e);
+      return '';
+    }
+  }
+
   function parseIdeaDescription(description) {
     const lines = description.split('\n');
     const result = {
@@ -543,7 +592,7 @@ console.log('[Dashboard] main.js loaded');
       idea.howto && `How to Test: ${idea.howto}`,
       idea.success && `Success Criteria: ${idea.success}`,
     ].filter(Boolean).join('\n');
-    const screenshotsJson = idea.screenshots.length ? JSON.stringify(idea.screenshots) : '';
+  const screenshotsJson = idea.screenshots.length ? await fitScreenshotsForSheet(idea.screenshots) : '';
     try {
       // If editing, use PUT and include the idea ID from the DOM
       const isEditing = !!editingIdea;
@@ -559,6 +608,7 @@ console.log('[Dashboard] main.js loaded');
         const id = editingIdea.closest('.bg-wellness-white')?.dataset?.id;
         if (id) payload.id = id;
       }
+      console.log('[Dashboard] Saving idea. Payload:', payload); // DEBUG
       const resp = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -627,18 +677,21 @@ console.log('[Dashboard] main.js loaded');
       screenshots: screenshotData,
     };
     try {
+      const screenshotsJsonForTest = test.screenshots.length ? await fitScreenshotsForSheet(test.screenshots) : '';
+      const payload = {
+        name: test.name,
+        startDate: test.startDate,
+        expectedEndDate: test.endDate,
+        tester: test.tester,
+        status: test.status,
+        notes: test.notes,
+        screenshots: screenshotsJsonForTest,
+      };
+      console.log('[Dashboard] Saving test. Payload:', payload); // DEBUG
       const resp = await fetch('/api/tests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: test.name,
-          startDate: test.startDate,
-          expectedEndDate: test.endDate,
-          tester: test.tester,
-          status: test.status,
-          notes: test.notes,
-          screenshots: test.screenshots.length ? JSON.stringify(test.screenshots) : '',
-        }),
+        body: JSON.stringify(payload),
       });
       if (!resp.ok){
         const err = await resp.json().catch(() => ({}));
@@ -697,18 +750,22 @@ console.log('[Dashboard] main.js loaded');
       }));
       
       try {
+        // Fit screenshots for Google Sheets size limits before sending
+        const screenshotsJson = screenshots.length ? await fitScreenshotsForSheet(screenshots) : '';
+        const payload = {
+          name: container.querySelector('h3')?.textContent,
+          startDate: container.querySelector('.grid > div:nth-child(1) p')?.textContent,
+          endDate,
+          tester: container.querySelector('.grid > div:nth-child(3) p')?.textContent,
+          result: result === 'passed' ? 'Passed' : 'Failed',
+          results: resultsText,
+          screenshots: screenshotsJson,
+        };
+        console.log('[Dashboard] Completing test. Payload:', payload); // DEBUG
         await fetch('/api/complete-test', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: container.querySelector('h3')?.textContent,
-            startDate: container.querySelector('.grid > div:nth-child(1) p')?.textContent,
-            endDate,
-            tester: container.querySelector('.grid > div:nth-child(3) p')?.textContent,
-            result: result === 'passed' ? 'Passed' : 'Failed',
-            results: resultsText,
-            screenshots: screenshots.length ? JSON.stringify(screenshots) : '',
-          }),
+          body: JSON.stringify(payload),
         });
       } catch (err){
         console.error('Record completion failed:', err);

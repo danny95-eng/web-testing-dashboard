@@ -19,7 +19,9 @@ async function ensureSheetWithHeaders(doc, title, headers) {
   let sheet = doc.sheetsByTitle[title];
   if (!sheet) throw new Error(`Sheet titled "${title}" not found`);
   await sheet.loadHeaderRow();
-  if (!(sheet.headerValues || []).length) {
+  const existing = sheet.headerValues || [];
+  if (!existing.length || headers.some(h => !existing.includes(h))) {
+    console.warn(`[api/complete-test] Resetting header row for sheet "${title}" to ensure required columns exist.`);
     await sheet.setHeaderRow(headers);
   }
   return sheet;
@@ -43,6 +45,7 @@ module.exports = async (req, res) => {
 
     const { id, name, startDate, endDate, tester, result, results, screenshots } = body || {};
     console.log('Complete test data received:', { id, name, startDate, endDate, tester, result, results: results ? 'present' : 'none', screenshots: screenshots ? `${screenshots.length} chars` : 'none' });
+    console.log('[API /api/complete-test POST] Full body:', JSON.stringify(body, null, 2)); // DEBUG
     if (!name) { res.statusCode = 400; res.end(JSON.stringify({ error: 'name is required' })); return; }
 
     // Check if screenshots data is too large for Google Sheets
