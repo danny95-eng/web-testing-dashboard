@@ -300,24 +300,47 @@ console.log('[Dashboard] main.js loaded');
   // Fit screenshots to approximate Google Sheets cell limits by keeping one compressed image if needed
   async function fitScreenshotsForSheet(screenshots) {
     try {
-      const json = JSON.stringify(screenshots);
-      // Keep well under server 40k truncation threshold
-      const LIMIT = 39000;
+      const LIMIT = 39000; // Keep well under server 40k truncation threshold
+
+      // First, try with existing data
+      let json = JSON.stringify(screenshots);
       if (json.length <= LIMIT) return json;
-      // Keep only first image and compress progressively
-      if (!screenshots.length) return '';
-      const first = screenshots[0];
-      const qualities = [0.7, 0.55, 0.4, 0.3, 0.2];
-      const edges = [800, 700, 600, 500, 400];
-    for (const maxEdge of edges) {
-        for (const q of qualities) {
-          const compressed = await compressDataUrl(first.data, { maxEdge, quality: q });
-          const candidate = JSON.stringify([{ name: first.name, data: compressed }]);
-      if (candidate.length <= LIMIT) return candidate;
+
+      // If too large, try compressing all images with progressively stronger settings
+      const qualities = [0.7, 0.5, 0.3];
+      const edges = [800, 600, 400];
+
+      for (const maxEdge of edges) {
+        for (const quality of qualities) {
+          const compressedScreenshots = await Promise.all(
+            screenshots.map(async (s) => ({
+              name: s.name,
+              data: await compressDataUrl(s.data, { maxEdge, quality }),
+            }))
+          );
+
+          // Try with all images compressed
+          json = JSON.stringify(compressedScreenshots);
+          if (json.length <= LIMIT) {
+            console.log(`[Dashboard] Screenshots compressed to fit. Edge: ${maxEdge}, Quality: ${quality}, Size: ${json.length}`);
+            return json;
+          }
+
+          // If still too big, start removing images from the end
+          let mutableScreenshots = [...compressedScreenshots];
+          while (mutableScreenshots.length > 0) {
+            json = JSON.stringify(mutableScreenshots);
+            if (json.length <= LIMIT) {
+              console.warn(`[Dashboard] Screenshots compressed and trimmed to ${mutableScreenshots.length} images to fit.`);
+              return json;
+            }
+            mutableScreenshots.pop();
+          }
         }
       }
-      // Could not fit; store a small marker instead
-      return '';
+
+      console.error('[Dashboard] Could not fit any screenshots even after compression.');
+      return ''; // Could not fit even one compressed image
     } catch (e) {
       console.warn('Failed to fit screenshots for sheet:', e);
       return '';
@@ -743,7 +766,7 @@ console.log('[Dashboard] main.js loaded');
       if (existingResults){ existingResults.replaceWith(resultsDiv); } else { container.appendChild(resultsDiv); }
       
       // Extract screenshot data from the test
-      const screenshotElements = container.querySelectorAll('.flex.gap-2 img');
+      const screenshotElements = container.querySelectorAll('.bg-wellness-white img');
       const screenshots = Array.from(screenshotElements).map(img => ({
         name: img.alt || 'Screenshot',
         data: img.src
