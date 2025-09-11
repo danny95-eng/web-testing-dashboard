@@ -597,6 +597,7 @@ console.log('[Dashboard] main.js loaded - v1.1');
     const screenshotsInput = document.getElementById('idea-screenshots');
     const screenshots = screenshotsInput?.files || [];
     let screenshotData = await readFilesAsDataURLs(screenshots);
+    console.log('[Dashboard] Uploaded files count:', screenshots.length, 'Processed data count:', screenshotData.length);
     if (screenshotData.length === 0 && window.pendingIdeaScreenshots && editingIdea) {
       screenshotData = window.pendingIdeaScreenshots;
     }
@@ -765,12 +766,13 @@ console.log('[Dashboard] main.js loaded - v1.1');
       const existingResults = container.querySelector('.mb-4:last-child');
       if (existingResults){ existingResults.replaceWith(resultsDiv); } else { container.appendChild(resultsDiv); }
       
-      // Extract screenshot data from the test
-      const screenshotElements = container.querySelectorAll('.bg-wellness-white img');
+      // Extract screenshot data from the test - look for images in the screenshots section
+      const screenshotElements = container.querySelectorAll('.bg-wellness-white .flex.gap-2 img');
       const screenshots = Array.from(screenshotElements).map(img => ({
         name: img.alt || 'Screenshot',
         data: img.src
       }));
+      console.log('[Dashboard] Found screenshots for completion:', screenshots.length);
       
       try {
         // Fit screenshots for Google Sheets size limits before sending
