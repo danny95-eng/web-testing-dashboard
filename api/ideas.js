@@ -41,16 +41,29 @@ async function ensureSheet(doc, title) {
   return sheet;
 }
 
+async function ensureSheetWithHeaders(doc, title, headers) {
+  await doc.loadInfo();
+  let sheet = doc.sheetsByTitle[title];
+  if (!sheet) throw new Error(`Sheet titled "${title}" not found`);
+  await sheet.loadHeaderRow();
+  const existing = sheet.headerValues || [];
+  if (!existing.length || !existing.includes('ID') || !existing.includes('Screenshots')) {
+    await sheet.setHeaderRow(headers);
+  }
+  return sheet;
+}
+
 module.exports = async (req, res) => {
   console.log('API /api/ideas called with method:', req.method);
   try {
     const doc = await getDoc();
     console.log('Doc loaded successfully');
-    const sheet = await ensureSheet(doc, 'Ideas');
+  const headers = ['ID','Title','Description','Screenshots','Submitted By','Status','Timestamp'];
+  const sheet = await ensureSheetWithHeaders(doc, 'Ideas', headers);
     console.log('Sheet ensured');
 
     if (req.method === 'GET') {
-      const ideas = await getIdeas(sheet);
+  const ideas = await getIdeas(sheet);
       console.log('Ideas fetched:', ideas.length);
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
@@ -88,8 +101,9 @@ module.exports = async (req, res) => {
         processedScreenshots = processedScreenshots.substring(0, 40000) + '...[truncated]';
       }
 
-  await sheet.addRow({
-        ID: `IDEA-${Date.now()}`,
+      const id = `IDEA-${Date.now()}`;
+      await sheet.addRow({
+        ID: id,
         Title: title,
         Description: description,
         Screenshots: processedScreenshots,
@@ -101,7 +115,7 @@ module.exports = async (req, res) => {
 
       res.statusCode = 201;
       res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ message: 'Idea submitted successfully!' }));
+      res.end(JSON.stringify({ id, message: 'Idea submitted successfully!' }));
       return;
     }
 

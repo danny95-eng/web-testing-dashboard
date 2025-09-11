@@ -40,10 +40,13 @@ console.log('[Dashboard] main.js loaded');
       document.getElementById('idea-reasoning').value = ideaData.reasoning || '';
       document.getElementById('idea-howto').value = ideaData.howto || '';
       document.getElementById('idea-success').value = ideaData.success || '';
+  // Keep existing screenshots if user doesn't re-upload
+  window.pendingIdeaScreenshots = ideaData.screenshots || [];
     } else {
       title.textContent = 'Add New Test Idea';
       const form = document.getElementById('idea-form');
       if (form) form.reset();
+  window.pendingIdeaScreenshots = [];
     }
     modal?.classList.add('active');
   }
@@ -521,7 +524,10 @@ console.log('[Dashboard] main.js loaded');
     e.preventDefault();
     const screenshotsInput = document.getElementById('idea-screenshots');
     const screenshots = screenshotsInput?.files || [];
-    const screenshotData = await readFilesAsDataURLs(screenshots);
+    let screenshotData = await readFilesAsDataURLs(screenshots);
+    if (screenshotData.length === 0 && window.pendingIdeaScreenshots && editingIdea) {
+      screenshotData = window.pendingIdeaScreenshots;
+    }
     const idea = {
       name: document.getElementById('idea-name')?.value.trim(),
       submitter: document.getElementById('idea-submitter')?.value.trim(),
@@ -562,6 +568,7 @@ console.log('[Dashboard] main.js loaded');
         const err = await resp.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to save idea');
       }
+      const data = await resp.json().catch(() => ({}));
       if (editingIdea){
         const container = editingIdea.closest('.bg-wellness-white');
         container.querySelector('h3').textContent = idea.name;
@@ -588,9 +595,11 @@ console.log('[Dashboard] main.js loaded');
           });
         }
       } else {
-        addIdea(idea);
+        const el = addIdea(idea);
+        if (data && data.id) el.dataset.id = data.id;
       }
-      closeIdeaModal();
+  window.pendingIdeaScreenshots = [];
+  closeIdeaModal();
     } catch (err){
       console.error('Save idea failed:', err);
       alert('Failed to save idea to Google Sheet. Please try again.');
